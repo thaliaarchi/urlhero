@@ -18,8 +18,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s dir\n", os.Args[0])
 		os.Exit(2)
 	}
+	dir := os.Args[1]
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "No such directory: %s", dir)
+		os.Exit(1)
+	}
 
-	if err := DownloadTinytown(os.Args[1]); err != nil {
+	if err := DownloadTinytown(dir); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -30,26 +35,32 @@ func DownloadTinytown(dir string) error {
 	if err != nil {
 		return err
 	}
+
 	conf := torrent.NewDefaultClientConfig()
 	conf.DataDir = dir
 	c, err := torrent.NewClient(conf)
 	if err != nil {
 		return err
 	}
+
 	for i, id := range ids {
 		url := fmt.Sprintf("https://archive.org/download/%s/%s_archive.torrent", id, id)
-		fmt.Printf("(%d/%d) Adding %s\n", i, len(ids), id)
+		fmt.Printf("(%d/%d) Adding %s\n", i+1, len(ids), id)
 		filename := filepath.Join(dir, path.Base(url))
 		if err := saveFile(url, filename); err != nil {
 			return err
 		}
+
 		t, err := c.AddTorrentFromFile(filename)
 		if err != nil {
 			return err
 		}
 		t.DownloadAll()
+		if i%15 == 14 {
+			c.WaitAll()
+		}
 	}
-	fmt.Println(c.WaitAll())
+	c.WaitAll()
 	return nil
 }
 
