@@ -12,12 +12,12 @@ import (
 
 type Reader struct {
 	s          *bufio.Scanner
+	header     []Header
 	readHeader bool
-	header     []Meta
 	line       string
 }
 
-type Meta struct {
+type Header struct {
 	Field, Value string
 }
 
@@ -31,13 +31,13 @@ func NewReader(r io.Reader) *Reader {
 	return &Reader{s: s}
 }
 
-func (r *Reader) Header() ([]Meta, error) {
+func (r *Reader) Header() ([]Header, error) {
 	if r.readHeader {
 		return r.header, nil
 	}
 	r.readHeader = true
 	if !r.s.Scan() {
-		return nil, nil
+		return nil, r.s.Err()
 	}
 	line := r.s.Text()
 	if !strings.HasPrefix(line, "#") { // Allow omitted header section
@@ -50,9 +50,9 @@ func (r *Reader) Header() ([]Meta, error) {
 			return r.header, fmt.Errorf("header line missing colon separator: %s", line)
 		}
 		value := strings.TrimLeft(line[i+1:], "\t ")
-		r.header = append(r.header, Meta{line[1:i], value})
+		r.header = append(r.header, Header{line[1:i], value})
 		if !r.s.Scan() {
-			return r.header, nil
+			return r.header, r.s.Err()
 		}
 		line = r.s.Text()
 		if line == "" {
@@ -75,7 +75,10 @@ func (r *Reader) Read() (*Link, error) {
 	r.line = ""
 	if line == "" {
 		if !r.s.Scan() {
-			return nil, r.err()
+			if err := r.s.Err(); err != nil {
+				return nil, err
+			}
+			return nil, io.EOF
 		}
 		line = r.s.Text()
 	}
@@ -84,13 +87,6 @@ func (r *Reader) Read() (*Link, error) {
 		return nil, fmt.Errorf("link missing bar separator: %s", line)
 	}
 	return &Link{line[:i], line[i+1:]}, nil
-}
-
-func (r *Reader) err() error {
-	if err := r.s.Err(); err != nil {
-		return err
-	}
-	return io.EOF
 }
 
 // scanLines splits by LF, CRLF, or CR.
@@ -114,7 +110,7 @@ func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	return 0, nil, nil
 }
 
-func (m Meta) String() string {
+func (m Header) String() string {
 	return fmt.Sprintf("#%s: %s", m.Field, m.Value)
 }
 

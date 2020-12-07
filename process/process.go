@@ -51,7 +51,7 @@ func process(dirname string) error {
 
 	for _, fi := range contents {
 		name := fi.Name()
-		fmt.Println("check", fi.Name())
+		fmt.Println(filepath.Join(filepath.Base(dirname), name))
 		if !strings.HasSuffix(name, ".zip") {
 			continue
 		}
@@ -66,11 +66,10 @@ func process(dirname string) error {
 		if err != nil {
 			return err
 		}
-		var meta SiteMeta
+		var meta Meta
 		for _, zf := range r.File {
-			fmt.Println("  ", zf.Name)
-			if !strings.HasSuffix(zf.Name, ".xz") {
-				fmt.Printf("non-xz skipped: %s\n", zf.Name)
+			fmt.Println(" ", zf.Name)
+			if !strings.HasSuffix(zf.Name, ".xz") || zf.FileInfo().IsDir() {
 				continue
 			}
 			zr, err := zf.Open()
@@ -96,18 +95,16 @@ func process(dirname string) error {
 				if err != nil {
 					return err
 				}
-				for _, m := range header {
-					fmt.Println(m)
-				}
+				_ = header
 				for {
 					link, err := br.Read()
 					if err == io.EOF {
 						break
 					}
 					if err != nil {
-						return err
+						fmt.Fprintln(os.Stderr, filepath.Join(dirname, name, zf.Name), err)
 					}
-					fmt.Println(link)
+					_ = link
 				}
 			}
 		}
@@ -115,7 +112,7 @@ func process(dirname string) error {
 	return nil
 }
 
-type SiteMeta struct {
+type Meta struct {
 	Alphabet          string  `json:"alphabet"`
 	Autoqueue         bool    `json:"autoqueue"`
 	AutoreleaseTime   int     `json:"autorelease_time"`
