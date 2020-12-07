@@ -66,7 +66,7 @@ func process(dirname string) error {
 		if err != nil {
 			return err
 		}
-		var siteMeta SiteMeta
+		var meta SiteMeta
 		for _, zf := range r.File {
 			fmt.Println("  ", zf.Name)
 			if !strings.HasSuffix(zf.Name, ".xz") {
@@ -86,17 +86,17 @@ func process(dirname string) error {
 			case strings.HasSuffix(zf.Name, ".meta.json.xz"):
 				jd := json.NewDecoder(xr)
 				jd.DisallowUnknownFields()
-				if err := jd.Decode(&siteMeta); err != nil {
+				if err := jd.Decode(&meta); err != nil {
 					return err
 				}
 				continue
 			case strings.HasSuffix(zf.Name, ".txt.xz"):
 				br := beacon.NewReader(xr)
-				meta, err := br.ReadMeta()
+				header, err := br.Header()
 				if err != nil {
 					return err
 				}
-				for _, m := range meta {
+				for _, m := range header {
 					fmt.Println(m)
 				}
 				for {

@@ -3,7 +3,6 @@ package beacon
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -12,11 +11,10 @@ import (
 // https://gbv.github.io/beaconspec/beacon.html
 
 type Reader struct {
-	s        *bufio.Scanner
-	readMeta bool
-	meta     []Meta
-	line     string
-	lines    int
+	s          *bufio.Scanner
+	readHeader bool
+	header     []Meta
+	line       string
 }
 
 type Meta struct {
@@ -24,7 +22,7 @@ type Meta struct {
 }
 
 type Link struct {
-	Source, Target, Annotation string
+	Shortcode, URL string
 }
 
 func NewReader(r io.Reader) *Reader {
@@ -33,76 +31,59 @@ func NewReader(r io.Reader) *Reader {
 	return &Reader{s: s}
 }
 
-func (r *Reader) ReadMeta() ([]Meta, error) {
-	if r.readMeta {
-		return nil, errors.New("meta already read")
+func (r *Reader) Header() ([]Meta, error) {
+	if r.readHeader {
+		return r.header, nil
 	}
-	r.readMeta = true
-	if !r.scan() {
+	r.readHeader = true
+	if !r.s.Scan() {
 		return nil, nil
 	}
-	line := r.text()
-	if !strings.HasPrefix(line, "#") { // Allow omitted meta section
+	line := r.s.Text()
+	if !strings.HasPrefix(line, "#") { // Allow omitted header section
 		r.line = line
 		return nil, nil
 	}
 	for {
 		i := strings.IndexByte(line, ':')
 		if i == -1 {
-			return r.meta, fmt.Errorf("meta line missing separator: %s", line)
+			return r.header, fmt.Errorf("header line missing colon separator: %s", line)
 		}
 		value := strings.TrimLeft(line[i+1:], "\t ")
-		r.meta = append(r.meta, Meta{line[1:i], value})
-		if !r.scan() {
-			return r.meta, nil
+		r.header = append(r.header, Meta{line[1:i], value})
+		if !r.s.Scan() {
+			return r.header, nil
 		}
-		line = r.text()
+		line = r.s.Text()
 		if line == "" {
-			return r.meta, nil
+			return r.header, nil
 		}
 		if !strings.HasPrefix(line, "#") {
 			r.line = line
-			return nil, fmt.Errorf("blank line must follow meta section")
+			return nil, fmt.Errorf("blank line must follow header")
 		}
 	}
 }
 
 func (r *Reader) Read() (*Link, error) {
-	if !r.readMeta {
-		if _, err := r.ReadMeta(); err != nil {
+	if !r.readHeader {
+		if _, err := r.Header(); err != nil {
 			return nil, err
 		}
 	}
-	if !r.scan() {
-		return nil, r.err()
+	line := r.line
+	r.line = ""
+	if line == "" {
+		if !r.s.Scan() {
+			return nil, r.err()
+		}
+		line = r.s.Text()
 	}
-	line := r.text()
-	fields := strings.Split(line, "|")
-	switch len(fields) {
-	case 3: // source|annotation|target
-		return &Link{fields[0], fields[2], fields[1]}, nil
-	case 2: // source|target
-		return &Link{fields[0], "", fields[1]}, nil
-	case 1: // source
-		return &Link{fields[0], "", fields[0]}, nil
+	i := strings.IndexByte(line, '|')
+	if i == -1 {
+		return nil, fmt.Errorf("link missing bar separator: %s", line)
 	}
-	return nil, fmt.Errorf("link line has too many bars: %s", line)
-}
-
-func (r *Reader) scan() bool {
-	if r.line != "" {
-		return true
-	}
-	r.lines++
-	return r.s.Scan()
-}
-
-func (r *Reader) text() string {
-	if l := r.line; l != "" {
-		r.line = ""
-		return l
-	}
-	return r.s.Text()
+	return &Link{line[:i], line[i+1:]}, nil
 }
 
 func (r *Reader) err() error {
@@ -131,4 +112,12 @@ func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	}
 	// Request more data.
 	return 0, nil, nil
+}
+
+func (m Meta) String() string {
+	return fmt.Sprintf("#%s: %s", m.Field, m.Value)
+}
+
+func (l Link) String() string {
+	return fmt.Sprintf("%s|%s", l.Shortcode, l.URL)
 }
