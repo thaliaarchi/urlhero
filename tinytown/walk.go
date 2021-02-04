@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-package main
+package tinytown
 
 import (
 	"archive/zip"
@@ -19,14 +19,6 @@ import (
 	"github.com/andrewarchi/urlteam/beacon"
 	"github.com/ulikunitz/xz"
 )
-
-func main() {
-	dir := os.Args[1]
-	if err := processAll(dir); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-}
 
 func processAll(root string) error {
 	rootContents, err := ioutil.ReadDir(root)
