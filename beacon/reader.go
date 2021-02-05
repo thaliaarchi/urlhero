@@ -10,7 +10,6 @@ package beacon
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -19,13 +18,13 @@ import (
 // Spec: https://gbv.github.io/beaconspec/beacon.html
 
 type Reader struct {
-	s          *bufio.Scanner
-	header     []Header
-	readHeader bool
-	line       string
+	r        *bufio.Reader
+	meta     []Meta
+	metaRead bool
+	line     string
 }
 
-type Header struct {
+type Meta struct {
 	Field, Value string
 }
 
@@ -34,91 +33,110 @@ type Link struct {
 }
 
 func NewReader(r io.Reader) *Reader {
-	s := bufio.NewScanner(r)
-	s.Split(scanLines)
-	return &Reader{s: s}
+	return &Reader{r: bufio.NewReader(r)}
 }
 
-func (r *Reader) Header() ([]Header, error) {
-	if r.readHeader {
-		return r.header, nil
+func (r *Reader) Meta() ([]Meta, error) {
+	meta, err := r.readMeta()
+	if err == nil || err == io.EOF {
+		return meta, nil
 	}
-	r.readHeader = true
-	if !r.s.Scan() {
-		return nil, r.s.Err()
+	return nil, err
+}
+
+func (r *Reader) readMeta() ([]Meta, error) {
+	if r.metaRead {
+		return r.meta, nil
 	}
-	line := r.s.Text()
-	if !strings.HasPrefix(line, "#") { // Allow omitted header section
-		r.line = line
-		return nil, nil
+	r.metaRead = true
+	if err := r.consumeBOM(); err != nil {
+		return nil, err
 	}
+	// Allow omitted header section
+	if b, err := r.r.Peek(1); err != nil || b[0] != '#' {
+		return nil, err
+	}
+
+	// Read meta lines until the first blank line or non-#-prefixed line
 	for {
-		i := strings.IndexByte(line, ':')
-		if i == -1 {
-			return r.header, fmt.Errorf("header line missing colon separator: %s", line)
+		line, err := r.readLine()
+		if err != nil || line == "" {
+			return r.meta, err
 		}
-		value := strings.TrimLeft(line[i+1:], "\t ")
-		r.header = append(r.header, Header{line[1:i], value})
-		if !r.s.Scan() {
-			return r.header, r.s.Err()
-		}
-		line = r.s.Text()
-		if line == "" {
-			return r.header, nil
-		}
-		if !strings.HasPrefix(line, "#") {
+		if line[0] != '#' {
 			r.line = line
-			return nil, fmt.Errorf("blank line must follow header")
+			return r.meta, nil
+		}
+		meta, err := splitMeta(line)
+		if err != nil {
+			return nil, err
+		}
+		r.meta = append(r.meta, meta)
+	}
+}
+
+// consumeBOM skips a UTF-8 byte order mark as permitted by section 3.1.
+func (r *Reader) consumeBOM() error {
+	ch, _, err := r.r.ReadRune()
+	if err != nil {
+		return err
+	}
+	if ch == '\ufeff' {
+		return nil
+	}
+	return r.r.UnreadRune()
+}
+
+func splitMeta(meta string) (Meta, error) {
+	for i, ch := range meta[1:] {
+		switch {
+		case 'A' <= ch && ch <= 'Z':
+		case ch == ':' || ch == ' ' || ch == '\t':
+			field, value := meta[:i], meta[i+1:]
+			for value != "" && (value[0] == ' ' || value[0] == '\t') {
+				value = value[1:]
+			}
+			return Meta{field, value}, nil
+		default:
+			return Meta{}, fmt.Errorf("beacon: invalid character %q in meta field: %q", ch, meta)
 		}
 	}
+	return Meta{}, fmt.Errorf("beacon: meta line missing value: %q", meta)
 }
 
 func (r *Reader) Read() (*Link, error) {
-	if !r.readHeader {
-		if _, err := r.Header(); err != nil {
+	if !r.metaRead {
+		if _, err := r.Meta(); err != nil {
 			return nil, err
 		}
 	}
-	line := r.line
-	r.line = ""
-	if line == "" {
-		if !r.s.Scan() {
-			if err := r.s.Err(); err != nil {
-				return nil, err
-			}
-			return nil, io.EOF
-		}
-		line = r.s.Text()
+	line, err := r.readLine()
+	if err != nil {
+		return nil, err
 	}
 	i := strings.IndexByte(line, '|')
 	if i == -1 {
-		return nil, fmt.Errorf("link missing bar separator: %s", line)
+		return nil, fmt.Errorf("beacon: link line missing bar separator: %s", line)
 	}
 	return &Link{line[:i], line[i+1:]}, nil
 }
 
-// scanLines splits by LF, CRLF, or CR.
-func scanLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
-	if atEOF && len(data) == 0 {
-		return 0, nil, nil
+func (r *Reader) readLine() (string, error) {
+	if l := r.line; l != "" {
+		r.line = ""
+		return l, nil
 	}
-	if i := bytes.IndexAny(data, "\n\r"); i >= 0 {
-		// We have a full newline-terminated line.
-		token = data[0:i]
-		if data[i] == '\r' && i+1 < len(data) && data[i+1] == '\n' {
-			i++
-		}
-		return i + 1, token, nil
+	line, err := r.r.ReadString('\n')
+	if err != nil {
+		return "", err
 	}
-	// If we're at EOF, we have a final, non-terminated line. Return it.
-	if atEOF {
-		return len(data), data, nil
+	if len(line) >= 2 && line[len(line)-2] == '\r' {
+		return line[:len(line)-2], nil
 	}
-	// Request more data.
-	return 0, nil, nil
+	return line[:len(line)-1], nil
 }
 
-func (m Header) String() string {
+func (m Meta) String() string {
 	return fmt.Sprintf("#%s: %s", m.Field, m.Value)
 }
 
