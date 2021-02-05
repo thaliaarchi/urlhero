@@ -12,6 +12,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 )
 
@@ -19,24 +20,29 @@ import (
 
 type Reader struct {
 	r        *bufio.Reader
-	meta     []Meta
+	meta     []MetaField
 	metaRead bool
 	line     string
+
+	// If LazyBars is true, all links are resolved as SOURCE|TARGET. Any
+	// further '|' characters on a line are considered to be part of
+	// TARGET.
+	LazyBars bool
 }
 
-type Meta struct {
-	Field, Value string
+type MetaField struct {
+	Name, Value string
 }
 
 type Link struct {
-	Shortcode, URL string
+	Source, Target, Annotation string
 }
 
 func NewReader(r io.Reader) *Reader {
 	return &Reader{r: bufio.NewReader(r)}
 }
 
-func (r *Reader) Meta() ([]Meta, error) {
+func (r *Reader) Meta() ([]MetaField, error) {
 	meta, err := r.readMeta()
 	if err == nil || err == io.EOF {
 		return meta, nil
@@ -44,7 +50,7 @@ func (r *Reader) Meta() ([]Meta, error) {
 	return nil, err
 }
 
-func (r *Reader) readMeta() ([]Meta, error) {
+func (r *Reader) readMeta() ([]MetaField, error) {
 	if r.metaRead {
 		return r.meta, nil
 	}
@@ -81,13 +87,13 @@ func (r *Reader) consumeBOM() error {
 	if err != nil {
 		return err
 	}
-	if ch == '\ufeff' {
+	if ch == '\uFEFF' {
 		return nil
 	}
 	return r.r.UnreadRune()
 }
 
-func splitMeta(meta string) (Meta, error) {
+func splitMeta(meta string) (MetaField, error) {
 	for i, ch := range meta[1:] {
 		switch {
 		case 'A' <= ch && ch <= 'Z':
@@ -96,12 +102,12 @@ func splitMeta(meta string) (Meta, error) {
 			for value != "" && (value[0] == ' ' || value[0] == '\t') {
 				value = value[1:]
 			}
-			return Meta{field, value}, nil
+			return MetaField{field, value}, nil
 		default:
-			return Meta{}, fmt.Errorf("beacon: invalid character %q in meta field: %q", ch, meta)
+			return MetaField{}, fmt.Errorf("beacon: invalid character %q in meta field: %q", ch, meta)
 		}
 	}
-	return Meta{}, fmt.Errorf("beacon: meta line missing value: %q", meta)
+	return MetaField{}, fmt.Errorf("beacon: meta line missing value: %q", meta)
 }
 
 func (r *Reader) Read() (*Link, error) {
@@ -110,15 +116,36 @@ func (r *Reader) Read() (*Link, error) {
 			return nil, err
 		}
 	}
-	line, err := r.readLine()
-	if err != nil {
-		return nil, err
+	line := ""
+	var err error
+	for line != "" {
+		line, err = r.readLine()
+		if err != nil {
+			return nil, err
+		}
 	}
-	i := strings.IndexByte(line, '|')
-	if i == -1 {
-		return nil, fmt.Errorf("beacon: link line missing bar separator: %s", line)
+	if r.LazyBars {
+		if i := strings.IndexByte(line, '|'); i != -1 {
+			return &Link{line[:i], line[i+1:], ""}, nil
+		}
+		fmt.Fprintf(os.Stderr, "beacon: link line missing bar separator: %s", line)
+		return &Link{line, "", ""}, nil
 	}
-	return &Link{line[:i], line[i+1:]}, nil
+	var link Link
+	tokens := strings.SplitN(line, "|", 4)
+	switch len(tokens) {
+	case 1:
+		link.Source = tokens[0]
+	case 2:
+		link.Source, link.Target = tokens[0], tokens[1]
+		// TODO:
+		// link.Source, link.Annotation = tokens[0], tokens[1]
+	case 3:
+		link.Source, link.Annotation, link.Target = tokens[0], tokens[1], tokens[2]
+	case 4:
+		return nil, fmt.Errorf("beacon: link line has too many bar separators: %q", line)
+	}
+	return &link, nil
 }
 
 func (r *Reader) readLine() (string, error) {
@@ -136,10 +163,13 @@ func (r *Reader) readLine() (string, error) {
 	return line[:len(line)-1], nil
 }
 
-func (m Meta) String() string {
-	return fmt.Sprintf("#%s: %s", m.Field, m.Value)
+func (m MetaField) String() string {
+	return fmt.Sprintf("#%s: %s", m.Name, m.Value)
 }
 
 func (l Link) String() string {
-	return fmt.Sprintf("%s|%s", l.Shortcode, l.URL)
+	if l.Annotation != "" {
+		return fmt.Sprintf("%s|%s|%s", l.Source, l.Annotation, l.Target)
+	}
+	return fmt.Sprintf("%s|%s", l.Source, l.Target)
 }
