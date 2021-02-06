@@ -65,14 +65,14 @@ func GetReleaseIDs() ([]string, error) {
 	}
 	defer body.Close()
 
-	type item struct {
-		Identifier string `json:"identifier"`
+	type Response struct {
+		Items []struct {
+			Identifier string `json:"identifier"`
+		} `json:"items"`
+		Count int `json:"count"`
+		Total int `json:"total"`
 	}
-	var items struct {
-		Items []item `json:"items"`
-		Count int    `json:"count"`
-		Total int    `json:"total"`
-	}
+	var items Response
 	if err := json.NewDecoder(body).Decode(&items); err != nil {
 		return nil, err
 	}
