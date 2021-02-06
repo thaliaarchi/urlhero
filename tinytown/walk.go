@@ -42,7 +42,7 @@ func ProcessReleases(root string) error {
 				if strings.HasSuffix(f.Name(), ".meta.json.xz") {
 					return nil
 				}
-				fmt.Fprintln(os.Stderr, " ", f.Name())
+				fmt.Fprintf(os.Stderr, "\t%s\n", f.Name())
 				r, err := f.Open()
 				if err != nil {
 					return err
@@ -53,8 +53,7 @@ func ProcessReleases(root string) error {
 					return err
 				}
 				defer xr.Close()
-				br := beacon.NewReader(xr)
-				br.LazyBars = true
+				br := beacon.NewReader(xr, beacon.URLTeam)
 				for {
 					link, err := br.Read()
 					if err != nil {

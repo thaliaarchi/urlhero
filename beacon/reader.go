@@ -16,18 +16,12 @@ import (
 	"strings"
 )
 
-// Spec: https://gbv.github.io/beaconspec/beacon.html
-
 type Reader struct {
 	r        *bufio.Reader
 	meta     []MetaField
 	metaRead bool
 	line     string
-
-	// If LazyBars is true, all links are resolved as SOURCE|TARGET. Any
-	// further '|' characters on a line are considered to be part of
-	// TARGET.
-	LazyBars bool
+	format   Format
 }
 
 type MetaField struct {
@@ -38,8 +32,21 @@ type Link struct {
 	Source, Target, Annotation string
 }
 
-func NewReader(r io.Reader) *Reader {
-	return &Reader{r: bufio.NewReader(r)}
+// Format defines the format of the BEACON link dump.
+type Format uint8
+
+const (
+	// RFC link dumps follow draft-003 of the BEACON format RFC submitted
+	// December 2017 at https://gbv.github.io/beaconspec/beacon.html.
+	RFC Format = iota
+
+	// URLTeam link dumps resolve all links as SOURCE|TARGET. Any further
+	// '|' characters on a line are considered to be part of TARGET.
+	URLTeam
+)
+
+func NewReader(r io.Reader, format Format) *Reader {
+	return &Reader{r: bufio.NewReader(r), format: format}
 }
 
 func (r *Reader) Meta() ([]MetaField, error) {
@@ -133,7 +140,7 @@ func (r *Reader) Read() (*Link, error) {
 		return nil, err
 	}
 
-	if r.LazyBars {
+	if r.format == URLTeam {
 		if i := strings.IndexByte(line, '|'); i != -1 {
 			return &Link{line[:i], line[i+1:], ""}, nil
 		}
