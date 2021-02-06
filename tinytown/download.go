@@ -20,9 +20,9 @@ import (
 	"github.com/anacrolix/torrent"
 )
 
-// DownloadTinytown downloads all terroroftinytown releases via torrent.
-func DownloadTinytown(dir string) error {
-	ids, err := GetTinytownList()
+// DownloadTorrents downloads all terroroftinytown releases via torrent.
+func DownloadTorrents(dir string) error {
+	ids, err := GetReleaseIDs()
 	if err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func DownloadTinytown(dir string) error {
 	}
 
 	for i, id := range ids {
-		url := fmt.Sprintf("https://archive.org/download/%s/%s_archive.torrent", id, id)
+		url := "https://archive.org/download/" + id + "/" + id + "_archive.torrent"
 		fmt.Printf("(%d/%d) Adding %s\n", i+1, len(ids), id)
 		filename := filepath.Join(dir, path.Base(url))
 		if err := saveFile(url, filename); err != nil {
@@ -55,28 +55,30 @@ func DownloadTinytown(dir string) error {
 	return nil
 }
 
-const tinytownList = "https://archive.org/services/search/v1/scrape?q=subject:terroroftinytown&count=10000"
-
-// GetTinytownList queries the Internet Archive for the identifiers of
-// all incremental terroroftinytown releases.
-func GetTinytownList() ([]string, error) {
-	resp, err := http.Get(tinytownList)
+// GetReleaseIDs queries the Internet Archive for the identifiers of all
+// incremental terroroftinytown releases.
+func GetReleaseIDs() ([]string, error) {
+	url := "https://archive.org/services/search/v1/scrape?q=subject:terroroftinytown&count=10000"
+	body, err := httpGet(url)
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status %s", resp.Status)
-	}
-	defer resp.Body.Close()
+	defer body.Close()
 
-	type iaItem struct {
+	type item struct {
 		Identifier string `json:"identifier"`
 	}
 	var items struct {
-		Items []iaItem `json:"items"`
+		Items []item `json:"items"`
+		Count int    `json:"count"`
+		Total int    `json:"total"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+	if err := json.NewDecoder(body).Decode(&items); err != nil {
 		return nil, err
+	}
+	if items.Count != items.Total {
+		// TODO handle paging
+		return nil, fmt.Errorf("tinytown: queried %d of %d releases", items.Count, items.Total)
 	}
 
 	ids := make([]string, len(items.Items))
@@ -91,20 +93,28 @@ func saveFile(url, filename string) error {
 		return nil
 	}
 
-	resp, err := http.Get(url)
+	body, err := httpGet(url)
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("status %s", resp.Status)
-	}
-	defer resp.Body.Close()
+	defer body.Close()
 
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	_, err = io.Copy(f, resp.Body)
+	_, err = io.Copy(f, body)
 	return err
+}
+
+func httpGet(url string) (io.ReadCloser, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("http status %s", resp.Status)
+	}
+	return resp.Body, nil
 }
