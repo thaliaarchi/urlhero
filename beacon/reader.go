@@ -66,8 +66,11 @@ func (r *Reader) readMeta() ([]MetaField, error) {
 	// Read meta lines until the first blank line or non-#-prefixed line
 	for {
 		line, err := r.readLine()
-		if err != nil || line == "" {
+		if err != nil {
 			return r.meta, err
+		}
+		if trimLeftSpace(line) == "" {
+			break
 		}
 		if line[0] != '#' {
 			r.line = line
@@ -78,6 +81,18 @@ func (r *Reader) readMeta() ([]MetaField, error) {
 			return nil, err
 		}
 		r.meta = append(r.meta, meta)
+	}
+
+	// Consume empty lines
+	for {
+		line, err := r.readLine()
+		if err != nil {
+			return r.meta, err
+		}
+		if trimLeftSpace(line) != "" {
+			r.line = line
+			return r.meta, nil
+		}
 	}
 }
 
@@ -98,11 +113,7 @@ func splitMeta(meta string) (MetaField, error) {
 		switch {
 		case 'A' <= ch && ch <= 'Z':
 		case ch == ':' || ch == ' ' || ch == '\t':
-			field, value := meta[:i], meta[i+1:]
-			for value != "" && (value[0] == ' ' || value[0] == '\t') {
-				value = value[1:]
-			}
-			return MetaField{field, value}, nil
+			return MetaField{meta[:i], trimLeftSpace(meta[i+1:])}, nil
 		default:
 			return MetaField{}, fmt.Errorf("beacon: invalid character %q in meta field: %q", ch, meta)
 		}
@@ -116,21 +127,20 @@ func (r *Reader) Read() (*Link, error) {
 			return nil, err
 		}
 	}
-	line := ""
-	var err error
-	for line == "" {
-		line, err = r.readLine()
-		if err != nil {
-			return nil, err
-		}
+
+	line, err := r.readLine()
+	if err != nil {
+		return nil, err
 	}
+
 	if r.LazyBars {
 		if i := strings.IndexByte(line, '|'); i != -1 {
 			return &Link{line[:i], line[i+1:], ""}, nil
 		}
 		fmt.Fprintf(os.Stderr, "beacon: link line missing bar separator: %s\n", line)
-		return &Link{line, "", ""}, nil
+		return &Link{"", line, ""}, nil
 	}
+
 	var link Link
 	tokens := strings.SplitN(line, "|", 4)
 	switch len(tokens) {
@@ -154,13 +164,27 @@ func (r *Reader) readLine() (string, error) {
 		return l, nil
 	}
 	line, err := r.r.ReadString('\n')
-	if err != nil {
+	if err != nil && !(err == io.EOF && line != "") {
 		return "", err
 	}
-	if len(line) >= 2 && line[len(line)-2] == '\r' {
-		return line[:len(line)-2], nil
+	return dropLineBreak(line), nil
+}
+
+func dropLineBreak(line string) string {
+	if len(line) >= 1 && line[len(line)-1] == '\n' {
+		line = line[:len(line)-1]
+		if len(line) >= 1 && line[len(line)-1] == '\r' {
+			line = line[:len(line)-1]
+		}
 	}
-	return line[:len(line)-1], nil
+	return line
+}
+
+func trimLeftSpace(s string) string {
+	for s != "" && (s[0] == ' ' || s[0] == '\t') {
+		s = s[1:]
+	}
+	return s
 }
 
 func (m MetaField) String() string {
