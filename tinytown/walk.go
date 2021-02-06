@@ -7,8 +7,6 @@
 package tinytown
 
 import (
-	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,11 +14,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/andrewarchi/archive"
 	"github.com/andrewarchi/urlteam/beacon"
-	"github.com/ulikunitz/xz"
 )
 
-func processAll(root string) error {
+func ProcessReleases(root string) error {
 	rootContents, err := ioutil.ReadDir(root)
 	if err != nil {
 		return err
@@ -35,75 +33,45 @@ func processAll(root string) error {
 			return err
 		}
 		for _, file := range dirContents {
-			name := file.Name()
-			if !strings.HasSuffix(name, ".zip") {
+			filename := filepath.Join(dir, file.Name())
+			if !strings.HasSuffix(filename, ".zip") {
 				continue
 			}
-			if _, err := processZip(filepath.Join(dir, name), file.Size()); err != nil {
+			fmt.Fprintln(os.Stderr, filename)
+			err := archive.WalkFile(filename, func(f archive.File) error {
+				if strings.HasSuffix(f.Name(), ".meta.json.xz") {
+					return nil
+				}
+				fmt.Fprintln(os.Stderr, " ", f.Name())
+				r, err := f.Open()
+				if err != nil {
+					return err
+				}
+				defer r.Close()
+				xr, err := archive.NewXZReader(r)
+				if err != nil {
+					return err
+				}
+				defer xr.Close()
+				br := beacon.NewReader(xr)
+				br.LazyBars = true
+				for {
+					link, err := br.Read()
+					if err != nil {
+						if err == io.EOF {
+							return nil
+						}
+						return err
+					}
+					_ = link
+				}
+			})
+			if err != nil {
 				return err
 			}
 		}
 	}
 	return nil
-}
-
-func processZip(filename string, size int64) (*Meta, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	r, err := zip.NewReader(f, size)
-	if err != nil {
-		return nil, err
-	}
-	var meta *Meta
-	for _, zf := range r.File {
-		fmt.Printf("%s\n", filepath.Join(filename, zf.Name))
-		if !strings.HasSuffix(zf.Name, ".xz") || zf.FileInfo().IsDir() {
-			continue
-		}
-
-		zr, err := zf.Open()
-		if err != nil {
-			return nil, err
-		}
-		defer zr.Close()
-		xr, err := xz.NewReader(zr)
-		if err != nil {
-			return nil, err
-		}
-
-		switch {
-		case strings.HasSuffix(zf.Name, ".meta.json.xz"):
-			jd := json.NewDecoder(xr)
-			jd.DisallowUnknownFields()
-			var m Meta
-			if err := jd.Decode(&m); err != nil {
-				return nil, err
-			}
-			meta = &m
-			continue
-		case strings.HasSuffix(zf.Name, ".txt.xz"):
-			br := beacon.NewReader(xr)
-			_, err := br.Header()
-			if err != nil {
-				return nil, err
-			}
-			for {
-				_, err := br.Read()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					fmt.Fprintln(os.Stderr, filepath.Join(filepath.Base(filename), zf.Name), err)
-					continue
-				}
-			}
-		}
-	}
-	return meta, nil
 }
 
 type Meta struct {

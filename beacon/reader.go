@@ -73,7 +73,7 @@ func (r *Reader) readMeta() ([]MetaField, error) {
 			r.line = line
 			return r.meta, nil
 		}
-		meta, err := splitMeta(line)
+		meta, err := splitMeta(line[1:])
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +94,7 @@ func (r *Reader) consumeBOM() error {
 }
 
 func splitMeta(meta string) (MetaField, error) {
-	for i, ch := range meta[1:] {
+	for i, ch := range meta {
 		switch {
 		case 'A' <= ch && ch <= 'Z':
 		case ch == ':' || ch == ' ' || ch == '\t':
@@ -118,7 +118,7 @@ func (r *Reader) Read() (*Link, error) {
 	}
 	line := ""
 	var err error
-	for line != "" {
+	for line == "" {
 		line, err = r.readLine()
 		if err != nil {
 			return nil, err
@@ -128,7 +128,7 @@ func (r *Reader) Read() (*Link, error) {
 		if i := strings.IndexByte(line, '|'); i != -1 {
 			return &Link{line[:i], line[i+1:], ""}, nil
 		}
-		fmt.Fprintf(os.Stderr, "beacon: link line missing bar separator: %s", line)
+		fmt.Fprintf(os.Stderr, "beacon: link line missing bar separator: %s\n", line)
 		return &Link{line, "", ""}, nil
 	}
 	var link Link
