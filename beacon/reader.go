@@ -17,11 +17,12 @@ import (
 )
 
 type Reader struct {
-	r        *bufio.Reader
-	meta     []MetaField
-	metaRead bool
-	line     string
-	format   Format
+	r         *bufio.Reader
+	meta      []MetaField
+	metaRead  bool
+	line      string
+	format    Format
+	sourceLen int
 }
 
 type MetaField struct {
@@ -45,11 +46,19 @@ const (
 	URLTeam
 )
 
-func NewReader(r io.Reader, format Format) *Reader {
-	return &Reader{r: bufio.NewReader(r), format: format}
+func NewReader(r io.Reader) *Reader {
+	return &Reader{r: bufio.NewReader(r)}
+}
+
+func NewURLTeamReader(r io.Reader, shortcodeLen int) *Reader {
+	return &Reader{r: bufio.NewReader(r), format: URLTeam, sourceLen: shortcodeLen}
 }
 
 func (r *Reader) Meta() ([]MetaField, error) {
+	if r.metaRead {
+		return r.meta, nil
+	}
+	r.metaRead = true
 	meta, err := r.readMeta()
 	if err == nil || err == io.EOF {
 		return meta, nil
@@ -58,10 +67,6 @@ func (r *Reader) Meta() ([]MetaField, error) {
 }
 
 func (r *Reader) readMeta() ([]MetaField, error) {
-	if r.metaRead {
-		return r.meta, nil
-	}
-	r.metaRead = true
 	if err := r.consumeBOM(); err != nil {
 		return nil, err
 	}
@@ -142,9 +147,13 @@ func (r *Reader) Read() (*Link, error) {
 
 	if r.format == URLTeam {
 		if i := strings.IndexByte(line, '|'); i != -1 {
-			return &Link{line[:i], line[i+1:], ""}, nil
+			shortcode, target := line[:i], line[i+1:]
+			if len(shortcode) != r.sourceLen {
+				fmt.Fprintf(os.Stderr, "beacon: shortcode not %d characters: %q\n", r.sourceLen, line)
+			}
+			return &Link{shortcode, target, ""}, nil
 		}
-		fmt.Fprintf(os.Stderr, "beacon: link line missing bar separator: %s\n", line)
+		fmt.Fprintf(os.Stderr, "beacon: link line missing bar separator: %q\n", line)
 		return &Link{"", line, ""}, nil
 	}
 
