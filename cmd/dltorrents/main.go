@@ -25,7 +25,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := tinytown.DownloadTinytown(dir); err != nil {
+	if err := tinytown.DownloadTorrents(dir); err != nil {
 		log.Fatal(err)
 	}
 }

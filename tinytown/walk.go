@@ -45,7 +45,7 @@ type Meta struct {
 
 // ProcessFunc is the type of function that is called for each link
 // visited.
-type ProcessFunc func(link *beacon.Link, meta *Meta, shortcodeLen int) error
+type ProcessFunc func(l *beacon.Link, m *Meta, shortcodeLen int) error
 
 // ProcessReleases processes every release in a directory by calling fn
 // on every link.
@@ -138,7 +138,7 @@ func processLinkDump(f *zip.File, meta *Meta, fn ProcessFunc) error {
 	}
 	defer xr.Close()
 
-	shortcodeLen := len(f.Name) - len(".txt.xz")
+	shortcodeLen := len(filepath.Base(f.Name)) - len(".txt.xz")
 	br := beacon.NewURLTeamReader(xr, shortcodeLen)
 	for {
 		link, err := br.Read()
