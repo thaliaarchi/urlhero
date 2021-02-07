@@ -72,17 +72,17 @@ func GetReleaseIDs() ([]string, error) {
 		Count int `json:"count"`
 		Total int `json:"total"`
 	}
-	var items Response
-	if err := json.NewDecoder(body).Decode(&items); err != nil {
+	var resp Response
+	if err := json.NewDecoder(body).Decode(&resp); err != nil {
 		return nil, err
 	}
-	if items.Count != items.Total {
+	if resp.Count != resp.Total {
 		// TODO handle paging
-		return nil, fmt.Errorf("tinytown: queried %d of %d releases", items.Count, items.Total)
+		return nil, fmt.Errorf("tinytown: queried %d of %d releases", resp.Count, resp.Total)
 	}
 
-	ids := make([]string, len(items.Items))
-	for i, item := range items.Items {
+	ids := make([]string, len(resp.Items))
+	for i, item := range resp.Items {
 		ids[i] = item.Identifier
 	}
 	return ids, nil

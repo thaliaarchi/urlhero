@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -45,7 +44,7 @@ type Meta struct {
 
 // ProcessFunc is the type of function that is called for each link
 // visited.
-type ProcessFunc func(l *beacon.Link, m *Meta, shortcodeLen int) error
+type ProcessFunc func(l *beacon.Link, m *Meta, shortcodeLen int, releaseFilename, dumpFilename string) error
 
 // ProcessReleases processes every release in a directory by calling fn
 // on every link.
@@ -68,8 +67,7 @@ func ProcessReleases(root string, fn ProcessFunc) error {
 			if !strings.HasSuffix(filename, ".zip") {
 				continue
 			}
-			fmt.Fprintln(os.Stderr, filename)
-			if err := ProcessRelease(filename, fn); err != nil {
+			if err := ProcessProject(filename, fn); err != nil {
 				return err
 			}
 		}
@@ -77,35 +75,66 @@ func ProcessReleases(root string, fn ProcessFunc) error {
 	return nil
 }
 
-// ProcessRelease processes every link dump in a release by calling fn
-// on every link.
-func ProcessRelease(filename string, fn ProcessFunc) error {
+// ProcessProject processes every link dump in a project release by
+// calling fn on every link.
+func ProcessProject(filename string, fn ProcessFunc) error {
 	zr, err := zip.OpenReader(filename)
 	if err != nil {
 		return err
 	}
 	defer zr.Close()
-	if len(zr.File) == 0 {
-		return fmt.Errorf("tinytown: empty archive: %q", filename)
-	}
-
-	meta, err := readMeta(zr.File[0])
+	metaFile, dumps, err := classifyFiles(zr.File, filename)
 	if err != nil {
 		return err
 	}
-	for _, f := range zr.File[1:] {
-		fmt.Fprintf(os.Stderr, "\t%s\n", f.Name)
-		if err := processLinkDump(f, meta, fn); err != nil {
+	meta, err := readMeta(metaFile)
+	if err != nil {
+		return err
+	}
+	for _, f := range dumps {
+		if err := processLinkDump(f, filename, meta, fn); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func readMeta(f *zip.File) (*Meta, error) {
-	if !strings.HasSuffix(f.Name, ".meta.json.xz") {
-		return nil, fmt.Errorf("tinytown: not a meta file: %q", f.Name)
+func classifyFiles(files []*zip.File, filename string) (meta *zip.File, dumps []*zip.File, err error) {
+	// Before 2015-07-29, project zip archives were sorted with meta
+	// first, followed by dumps in increasing shortcode length. Later
+	// archives do not sort files.
+meta:
+	switch {
+	case len(files) == 0:
+		return nil, nil, fmt.Errorf("tinytown: empty archive: %s", filename)
+	// Meta is usually first or last; don't allocate for those.
+	case strings.HasSuffix(files[0].Name, ".meta.json.xz"):
+		meta = files[0]
+		dumps = files[1:]
+	case strings.HasSuffix(files[len(files)-1].Name, ".meta.json.xz"):
+		meta = files[len(files)-1]
+		dumps = files[:len(files)-1]
+	default:
+		for i, f := range files {
+			if strings.HasSuffix(f.Name, ".meta.json.xz") {
+				meta = f
+				dumps = make([]*zip.File, 0, len(files)-1)
+				dumps = append(append(dumps, files[:i]...), files[i+1:]...)
+				break meta
+			}
+		}
+		return nil, nil, fmt.Errorf("tinytown: no meta file in archive: %s", filename)
 	}
+
+	for _, f := range dumps {
+		if !strings.HasSuffix(f.Name, ".txt.xz") {
+			return nil, nil, fmt.Errorf("tinytown: not a link dump: %s", filename)
+		}
+	}
+	return
+}
+
+func readMeta(f *zip.File) (*Meta, error) {
 	fr, err := f.Open()
 	if err != nil {
 		return nil, err
@@ -125,10 +154,7 @@ func readMeta(f *zip.File) (*Meta, error) {
 	return &m, nil
 }
 
-func processLinkDump(f *zip.File, meta *Meta, fn ProcessFunc) error {
-	if !strings.HasSuffix(f.Name, ".txt.xz") {
-		return fmt.Errorf("tinytown: not a link dump: %q", f.Name)
-	}
+func processLinkDump(f *zip.File, filename string, meta *Meta, fn ProcessFunc) error {
 	r, err := f.Open()
 	if err != nil {
 		return err
@@ -142,15 +168,19 @@ func processLinkDump(f *zip.File, meta *Meta, fn ProcessFunc) error {
 
 	shortcodeLen := len(filepath.Base(f.Name)) - len(".txt.xz")
 	br := beacon.NewURLTeamReader(xr, shortcodeLen)
+	fmt.Printf("%s:%s ", filepath.Base(filename), f.Name)
+	n := 0
 	for {
 		link, err := br.Read()
 		if err != nil {
+			fmt.Printf("[%d links]\n", n)
 			if err == io.EOF {
 				return nil
 			}
 			return err
 		}
-		if err := fn(link, meta, shortcodeLen); err != nil {
+		n++
+		if err := fn(link, meta, shortcodeLen, filename, f.Name); err != nil {
 			return err
 		}
 	}
