@@ -8,7 +8,6 @@ Town link dumps.
 ### Parsing
 
 - Full BEACON format spec compliance
-- Detect ill-formatted links spanning multiple lines
 - Process URLTeam first-generation TinyBack releases
 
 ### Dependency issues

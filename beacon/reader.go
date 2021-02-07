@@ -12,7 +12,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 )
 
@@ -46,14 +45,19 @@ const (
 	URLTeam
 )
 
+// NewReader constructs a reader that reads RFC-format BEACON link
+// dumps.
 func NewReader(r io.Reader) *Reader {
 	return &Reader{r: bufio.NewReader(r)}
 }
 
+// NewURLTeamReader constructs a reader that reads URLTeam-format BEACON
+// link dumps. Links always omit the annotation field.
 func NewURLTeamReader(r io.Reader, shortcodeLen int) *Reader {
 	return &Reader{r: bufio.NewReader(r), format: URLTeam, sourceLen: shortcodeLen}
 }
 
+// Meta returns the meta fields in the header.
 func (r *Reader) Meta() ([]MetaField, error) {
 	if r.metaRead {
 		return r.meta, nil
@@ -139,24 +143,17 @@ func (r *Reader) Read() (*Link, error) {
 			return nil, err
 		}
 	}
+	if r.format == URLTeam {
+		return r.readLinkURLTeam()
+	}
+	return r.readLinkRFC()
+}
 
+func (r *Reader) readLinkRFC() (*Link, error) {
 	line, err := r.readLine()
 	if err != nil {
 		return nil, err
 	}
-
-	if r.format == URLTeam {
-		if i := strings.IndexByte(line, '|'); i != -1 {
-			shortcode, target := line[:i], line[i+1:]
-			if len(shortcode) != r.sourceLen {
-				fmt.Fprintf(os.Stderr, "beacon: shortcode not %d characters: %q\n", r.sourceLen, line)
-			}
-			return &Link{shortcode, target, ""}, nil
-		}
-		fmt.Fprintf(os.Stderr, "beacon: link line missing bar separator: %q\n", line)
-		return &Link{"", line, ""}, nil
-	}
-
 	var link Link
 	tokens := strings.SplitN(line, "|", 4)
 	switch len(tokens) {
@@ -174,7 +171,44 @@ func (r *Reader) Read() (*Link, error) {
 	return &link, nil
 }
 
+func (r *Reader) readLinkURLTeam() (*Link, error) {
+	line, err := r.readLineRaw()
+	if err != nil {
+		return nil, err
+	}
+	if len(line) < r.sourceLen || line[r.sourceLen] != '|' {
+		if i := strings.IndexByte(line, '|'); i != -1 {
+			return nil, fmt.Errorf("beacon: shortcode not %d characters: %q", r.sourceLen, line)
+		}
+		return nil, fmt.Errorf("beacon: link line missing bar separator: %q", line)
+	}
+	shortcode, target := line[:r.sourceLen], line[r.sourceLen+1:]
+	for {
+		line, err := r.readLineRaw()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+		if len(line) > r.sourceLen && line[r.sourceLen] == '|' {
+			r.line = line
+			break
+		}
+		target += line
+	}
+	return &Link{shortcode, dropLineBreak(target), ""}, nil
+}
+
 func (r *Reader) readLine() (string, error) {
+	line, err := r.readLineRaw()
+	if err != nil {
+		return "", err
+	}
+	return dropLineBreak(line), nil
+}
+
+func (r *Reader) readLineRaw() (string, error) {
 	if l := r.line; l != "" {
 		r.line = ""
 		return l, nil
@@ -183,15 +217,16 @@ func (r *Reader) readLine() (string, error) {
 	if err != nil && !(err == io.EOF && line != "") {
 		return "", err
 	}
-	return dropLineBreak(line), nil
+	return line, nil
 }
 
 func dropLineBreak(line string) string {
-	if len(line) >= 1 && line[len(line)-1] == '\n' {
-		line = line[:len(line)-1]
-		if len(line) >= 1 && line[len(line)-1] == '\r' {
-			line = line[:len(line)-1]
+	if len(line) > 0 && line[len(line)-1] == '\n' {
+		drop := 1
+		if len(line) > 1 && line[len(line)-2] == '\r' {
+			drop = 2
 		}
+		line = line[:len(line)-drop]
 	}
 	return line
 }
