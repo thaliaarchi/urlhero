@@ -22,25 +22,25 @@ import (
 
 // Meta contains link dump metadata from a *.meta.json.xz file.
 type Meta struct {
-	Alphabet          string  `json:"alphabet"`
-	Autoqueue         bool    `json:"autoqueue"`
-	AutoreleaseTime   int     `json:"autorelease_time"`
-	BannedCodes       []int   `json:"banned_codes"`
-	BodyRegex         string  `json:"body_regex"`
-	Enabled           bool    `json:"enabled"`
-	LocationAntiRegex string  `json:"location_anti_regex"`
-	LowerSequenceNum  int     `json:"lower_sequence_num"`
-	MaxNumItems       int     `json:"max_num_items"`
-	Method            string  `json:"method"`
-	MinClientVersion  int     `json:"min_client_version"`
-	MinVersion        int     `json:"min_version"`
 	Name              string  `json:"name"`
-	NoRedirectCodes   []int   `json:"no_redirect_codes"`
-	NumCountPerItem   int     `json:"num_count_per_item"`
-	RedirectCodes     []int   `json:"redirect_codes"`
-	RequestDelay      float64 `json:"request_delay"`
-	UnavailableCodes  []int   `json:"unavailable_codes"`
+	MinVersion        int     `json:"min_version"`
+	MinClientVersion  int     `json:"min_client_version"`
+	Alphabet          string  `json:"alphabet"`
 	URLTemplate       string  `json:"url_template"`
+	RequestDelay      float64 `json:"request_delay"`
+	RedirectCodes     []int   `json:"redirect_codes"`    // HTTP codes
+	NoRedirectCodes   []int   `json:"no_redirect_codes"` // HTTP codes
+	UnavailableCodes  []int   `json:"unavailable_codes"` // HTTP codes
+	BannedCodes       []int   `json:"banned_codes"`      // HTTP codes
+	BodyRegex         string  `json:"body_regex"`
+	LocationAntiRegex string  `json:"location_anti_regex"`
+	Method            string  `json:"method"`
+	Enabled           bool    `json:"enabled"`
+	Autoqueue         bool    `json:"autoqueue"`
+	NumCountPerItem   int     `json:"num_count_per_item"`
+	MaxNumItems       int     `json:"max_num_items"`
+	LowerSequenceNum  int64   `json:"lower_sequence_num"`
+	AutoreleaseTime   int     `json:"autorelease_time"`
 }
 
 // ProcessFunc is the type of function that is called for each link
@@ -117,7 +117,9 @@ func readMeta(f *zip.File) (*Meta, error) {
 	}
 	defer xr.Close()
 	var m Meta
-	if err := json.NewDecoder(xr).Decode(&m); err != nil {
+	d := json.NewDecoder(xr)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&m); err != nil {
 		return nil, err
 	}
 	return &m, nil
