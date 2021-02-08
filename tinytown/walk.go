@@ -22,18 +22,18 @@ import (
 // Meta contains link dump metadata from a *.meta.json.xz file.
 type Meta struct {
 	Name              string  `json:"name"`
-	MinVersion        int     `json:"min_version"`
-	MinClientVersion  int     `json:"min_client_version"`
+	MinVersion        int     `json:"min_version"`        // minimum library version
+	MinClientVersion  int     `json:"min_client_version"` // minimum pipeline version
 	Alphabet          string  `json:"alphabet"`
 	URLTemplate       string  `json:"url_template"`
-	RequestDelay      float64 `json:"request_delay"`
+	RequestDelay      float64 `json:"request_delay"`     // i.e. 0.5
 	RedirectCodes     []int   `json:"redirect_codes"`    // HTTP codes
 	NoRedirectCodes   []int   `json:"no_redirect_codes"` // HTTP codes
 	UnavailableCodes  []int   `json:"unavailable_codes"` // HTTP codes
 	BannedCodes       []int   `json:"banned_codes"`      // HTTP codes
 	BodyRegex         string  `json:"body_regex"`
 	LocationAntiRegex string  `json:"location_anti_regex"`
-	Method            string  `json:"method"`
+	Method            string  `json:"method"` // HTTP method, i.e. "head"
 	Enabled           bool    `json:"enabled"`
 	Autoqueue         bool    `json:"autoqueue"`
 	NumCountPerItem   int     `json:"num_count_per_item"`

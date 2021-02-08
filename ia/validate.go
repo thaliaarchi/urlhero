@@ -139,7 +139,7 @@ func (rv *ReadValidator) Validate() error {
 
 func (rv *ReadValidator) validate(kind string, hash hash.Hash, sum []byte) error {
 	if len(sum) != 0 {
-		s := rv.md5Hash.Sum(nil)
+		s := hash.Sum(nil)
 		if !bytes.Equal(s, sum) {
 			return fmt.Errorf("ia: %s sum is %x, but should be %x: %s", kind, s, sum, rv.name)
 		}
