@@ -26,12 +26,16 @@ import (
 )
 
 func Validate(dir string) error {
-	release := filepath.Base(dir)
-	files, err := ReadFileMeta(filepath.Join(dir, release+"_files.xml"))
+	metaName := filepath.Base(dir) + "_files.xml"
+	files, err := ReadFileMeta(filepath.Join(dir, metaName))
 	if err != nil {
 		return err
 	}
 	for _, file := range files {
+		fmt.Println(file.Name)
+		if file.Name == metaName {
+			continue // checksums of itself are inaccurate
+		}
 		fv, err := file.OpenValidator(dir)
 		if err != nil {
 			return err
@@ -85,7 +89,7 @@ func (fm *FileMeta) OpenValidator(dir string) (*ReadValidateCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ReadValidateCloser{ReadValidator: *fm.Validator(f)}, nil
+	return &ReadValidateCloser{ReadValidator: *fm.Validator(f), rc: f}, nil
 }
 
 func (fm *FileMeta) Validator(r io.Reader) *ReadValidator {

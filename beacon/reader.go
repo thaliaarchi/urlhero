@@ -19,7 +19,8 @@ type Reader struct {
 	r         *bufio.Reader
 	meta      []MetaField
 	metaRead  bool
-	line      string
+	peekLine  string
+	line      int
 	format    Format
 	sourceLen int
 }
@@ -67,7 +68,7 @@ func (r *Reader) Meta() ([]MetaField, error) {
 	if err == nil || err == io.EOF {
 		return meta, nil
 	}
-	return nil, err
+	return nil, r.err(err)
 }
 
 func (r *Reader) readMeta() ([]MetaField, error) {
@@ -89,7 +90,7 @@ func (r *Reader) readMeta() ([]MetaField, error) {
 			break
 		}
 		if line[0] != '#' {
-			r.line = line
+			r.peekLine = line
 			return r.meta, nil
 		}
 		meta, err := splitMeta(line[1:])
@@ -106,7 +107,7 @@ func (r *Reader) readMeta() ([]MetaField, error) {
 			return r.meta, err
 		}
 		if trimLeftSpace(line) != "" {
-			r.line = line
+			r.peekLine = line
 			return r.meta, nil
 		}
 	}
@@ -131,22 +132,24 @@ func splitMeta(meta string) (MetaField, error) {
 		case ch == ':' || ch == ' ' || ch == '\t':
 			return MetaField{meta[:i], trimLeftSpace(meta[i+1:])}, nil
 		default:
-			return MetaField{}, fmt.Errorf("beacon: invalid character %q in meta field: %q", ch, meta)
+			return MetaField{}, fmt.Errorf("invalid character %q in meta field: %q", ch, meta)
 		}
 	}
-	return MetaField{}, fmt.Errorf("beacon: meta line missing value: %q", meta)
+	return MetaField{}, fmt.Errorf("meta line missing value: %q", meta)
 }
 
-func (r *Reader) Read() (*Link, error) {
+func (r *Reader) Read() (link *Link, err error) {
 	if !r.metaRead {
 		if _, err := r.Meta(); err != nil {
 			return nil, err
 		}
 	}
 	if r.format == URLTeam {
-		return r.readLinkURLTeam()
+		link, err = r.readLinkURLTeam()
+	} else {
+		link, err = r.readLinkRFC()
 	}
-	return r.readLinkRFC()
+	return link, r.err(err)
 }
 
 func (r *Reader) readLinkRFC() (*Link, error) {
@@ -166,7 +169,7 @@ func (r *Reader) readLinkRFC() (*Link, error) {
 	case 3:
 		link.Source, link.Annotation, link.Target = tokens[0], tokens[1], tokens[2]
 	case 4:
-		return nil, fmt.Errorf("beacon: link line has too many bar separators: %q", line)
+		return nil, fmt.Errorf("link line has too many bar separators: %q", line)
 	}
 	return &link, nil
 }
@@ -176,13 +179,25 @@ func (r *Reader) readLinkURLTeam() (*Link, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Variable shortcode length
+	if r.sourceLen <= 0 {
+		i := strings.IndexByte(line, '|')
+		if i == -1 {
+			return nil, fmt.Errorf("link line missing bar separator: %q", line)
+		}
+		return &Link{line[:i], dropLineBreak(line[i:]), ""}, nil
+	}
+
+	// Fixed shortcode length
 	if len(line) < r.sourceLen || line[r.sourceLen] != '|' {
 		if i := strings.IndexByte(line, '|'); i != -1 {
-			return nil, fmt.Errorf("beacon: shortcode not %d characters: %q", r.sourceLen, line)
+			return nil, fmt.Errorf("shortcode not %d characters: %q", r.sourceLen, line)
 		}
-		return nil, fmt.Errorf("beacon: link line missing bar separator: %q", line)
+		return nil, fmt.Errorf("link line missing bar separator: %q", line)
 	}
 	shortcode, target := line[:r.sourceLen], line[r.sourceLen+1:]
+	// Append successive lines in multi-line link
 	for {
 		line, err := r.readLineRaw()
 		if err != nil {
@@ -192,7 +207,7 @@ func (r *Reader) readLinkURLTeam() (*Link, error) {
 			return nil, err
 		}
 		if len(line) > r.sourceLen && line[r.sourceLen] == '|' {
-			r.line = line
+			r.peekLine = line
 			break
 		}
 		target += line
@@ -209,15 +224,23 @@ func (r *Reader) readLine() (string, error) {
 }
 
 func (r *Reader) readLineRaw() (string, error) {
-	if l := r.line; l != "" {
-		r.line = ""
+	if l := r.peekLine; l != "" {
+		r.peekLine = ""
 		return l, nil
 	}
+	r.line++
 	line, err := r.r.ReadString('\n')
 	if err != nil && !(err == io.EOF && line != "") {
 		return "", err
 	}
 	return line, nil
+}
+
+func (r *Reader) err(err error) error {
+	if err == io.EOF || err == nil {
+		return err
+	}
+	return fmt.Errorf("beacon: line %d: %w", r.line, err)
 }
 
 func dropLineBreak(line string) string {
