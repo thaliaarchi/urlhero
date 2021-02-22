@@ -43,9 +43,6 @@ func Validate(dir string) error {
 		if _, err := io.Copy(ioutil.Discard, fv); err != nil {
 			return err
 		}
-		if err := fv.Validate(); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -129,23 +126,31 @@ func newReadValidator(r io.Reader, name string, md5Sum, sha1Sum, crc32Sum []byte
 	return rv
 }
 
-func (rv *ReadValidator) Read(p []byte) (n int, err error) { return rv.r.Read(p) }
-
-func (rv *ReadValidator) Validate() error {
-	if err := rv.validate("MD5", rv.md5Hash, rv.md5Sum); err != nil {
-		return err
+func (rv *ReadValidator) Read(p []byte) (n int, err error) {
+	n, err = rv.r.Read(p)
+	if err == io.EOF {
+		if err1 := rv.validate(); err1 != nil {
+			return n, err1
+		}
 	}
-	if err := rv.validate("SHA1", rv.sha1Hash, rv.sha1Sum); err != nil {
-		return err
-	}
-	return rv.validate("CRC32", rv.crc32Hash, rv.crc32Sum)
+	return n, err
 }
 
-func (rv *ReadValidator) validate(kind string, hash hash.Hash, sum []byte) error {
-	if len(sum) != 0 {
+func (rv *ReadValidator) validate() error {
+	if err := rv.validateSum("MD5", rv.md5Hash, rv.md5Sum); err != nil {
+		return err
+	}
+	if err := rv.validateSum("SHA1", rv.sha1Hash, rv.sha1Sum); err != nil {
+		return err
+	}
+	return rv.validateSum("CRC32", rv.crc32Hash, rv.crc32Sum)
+}
+
+func (rv *ReadValidator) validateSum(kind string, hash hash.Hash, sum []byte) error {
+	if hash != nil {
 		s := hash.Sum(nil)
 		if !bytes.Equal(s, sum) {
-			return fmt.Errorf("ia: %s sum is %x, but should be %x: %s", kind, s, sum, rv.name)
+			return fmt.Errorf("ia: validate %s: %s sum is %x instead of %x", rv.name, kind, s, sum)
 		}
 	}
 	return nil

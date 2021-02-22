@@ -69,5 +69,5 @@ func processFile(file *ia.FileMeta, dir string) error {
 		_ = link
 	}
 	fmt.Printf(" [%d links]\n", n)
-	return fv.Validate()
+	return nil
 }
