@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 )
 
 // DownloadDumps saves all short URL dumps to the given directory.
@@ -39,12 +40,22 @@ func downloadDump(dump DumpInfo, dir string) error {
 	}
 	defer f.Close()
 
-	body, err := httpGet(dump.URL.String())
+	resp, err := httpGet(dump.URL.String())
 	if err != nil {
 		return err
 	}
-	defer body.Close()
+	defer resp.Body.Close()
 
-	_, err = io.Copy(f, body)
-	return err
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		return err
+	}
+
+	if mod := resp.Header.Get("Last-Modified"); mod != "" {
+		mt, err := time.Parse(time.RFC1123, mod)
+		if err != nil {
+			return err
+		}
+		return os.Chtimes(name, mt, mt)
+	}
+	return nil
 }

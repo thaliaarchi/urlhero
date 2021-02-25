@@ -10,7 +10,6 @@ package wwiki
 import (
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -36,13 +35,13 @@ func GetDumps() ([]DumpInfo, error) {
 		return nil, err
 	}
 
-	body, err := httpGet(indexURL)
+	resp, err := httpGet(indexURL)
 	if err != nil {
 		return nil, err
 	}
-	defer body.Close()
+	defer resp.Body.Close()
 
-	doc, err := html.Parse(body)
+	doc, err := html.Parse(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +90,7 @@ func GetDumps() ([]DumpInfo, error) {
 	return dumps, nil
 }
 
-func httpGet(url string) (io.ReadCloser, error) {
+func httpGet(url string) (*http.Response, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -99,7 +98,7 @@ func httpGet(url string) (io.ReadCloser, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("wwiki: http status %s", resp.Status)
 	}
-	return resp.Body, nil
+	return resp, nil
 }
 
 func findFirst(n *html.Node, tag atom.Atom) *html.Node {
