@@ -10,6 +10,7 @@ package wwiki
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -35,16 +36,13 @@ func GetDumps() ([]DumpInfo, error) {
 		return nil, err
 	}
 
-	resp, err := http.Get(indexURL)
+	body, err := httpGet(indexURL)
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("http status %s", resp.Status)
-	}
-	defer resp.Body.Close()
+	defer body.Close()
 
-	doc, err := html.Parse(resp.Body)
+	doc, err := html.Parse(body)
 	if err != nil {
 		return nil, err
 	}
@@ -65,13 +63,13 @@ func GetDumps() ([]DumpInfo, error) {
 		u := baseURL.ResolveReference(rel)
 
 		if a.NextSibling.Type != html.TextNode {
-			return fmt.Errorf("no time and size for %s", href)
+			return fmt.Errorf("eeiki: no time and size for %s", href)
 		}
 		text := strings.TrimSpace(a.NextSibling.Data)
 
 		i := strings.LastIndexByte(text, ' ')
 		if i == -1 {
-			return fmt.Errorf("cannot get time and size for %s", href)
+			return fmt.Errorf("wwiki: cannot split time and size for %s", href)
 		}
 		timeStr := strings.TrimSpace(text[:i])
 		sizeStr := text[i+1:]
@@ -91,6 +89,17 @@ func GetDumps() ([]DumpInfo, error) {
 		return nil, err
 	}
 	return dumps, nil
+}
+
+func httpGet(url string) (io.ReadCloser, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("wwiki: http status %s", resp.Status)
+	}
+	return resp.Body, nil
 }
 
 func findFirst(n *html.Node, tag atom.Atom) *html.Node {
