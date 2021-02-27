@@ -12,7 +12,6 @@ Town link dumps.
 
 ### Dependency issues
 
-- anacrolix/torrent panic ([#465](https://github.com/anacrolix/torrent/issues/465))
 - anacrolix/torrent webseed peer issues
 
 ## Planned Features

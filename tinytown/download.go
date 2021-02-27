@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 
 	"github.com/anacrolix/torrent"
+	"github.com/anacrolix/torrent/storage"
 )
 
 // DownloadTorrents downloads all terroroftinytown releases via torrent.
@@ -29,6 +30,7 @@ func DownloadTorrents(dir string) error {
 
 	conf := torrent.NewDefaultClientConfig()
 	conf.DataDir = dir
+	conf.DefaultStorage = storage.NewMMap(dir)
 	c, err := torrent.NewClient(conf)
 	if err != nil {
 		return err
