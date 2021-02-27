@@ -59,30 +59,30 @@ func DownloadTorrents(dir string) error {
 // incremental terroroftinytown releases.
 func GetReleaseIDs() ([]string, error) {
 	url := "https://archive.org/services/search/v1/scrape?q=subject:terroroftinytown&count=10000"
-	body, err := httpGet(url)
+	resp, err := httpGet(url)
 	if err != nil {
 		return nil, err
 	}
-	defer body.Close()
+	defer resp.Body.Close()
 
-	type Response struct {
+	type Scrape struct {
 		Items []struct {
 			Identifier string `json:"identifier"`
 		} `json:"items"`
 		Count int `json:"count"`
 		Total int `json:"total"`
 	}
-	var resp Response
-	if err := json.NewDecoder(body).Decode(&resp); err != nil {
+	var items Scrape
+	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
 		return nil, err
 	}
-	if resp.Count != resp.Total {
+	if items.Count != items.Total {
 		// TODO handle paging
-		return nil, fmt.Errorf("tinytown: queried %d of %d releases", resp.Count, resp.Total)
+		return nil, fmt.Errorf("tinytown: queried %d of %d releases", items.Count, items.Total)
 	}
 
-	ids := make([]string, len(resp.Items))
-	for i, item := range resp.Items {
+	ids := make([]string, len(items.Items))
+	for i, item := range items.Items {
 		ids[i] = item.Identifier
 	}
 	return ids, nil
@@ -99,28 +99,28 @@ func saveFile(url, filename string) error {
 		return nil
 	}
 
-	body, err := httpGet(url)
+	resp, err := httpGet(url)
 	if err != nil {
 		return err
 	}
-	defer body.Close()
+	defer resp.Body.Close()
 
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	_, err = io.Copy(f, body)
+	_, err = io.Copy(f, resp.Body)
 	return err
 }
 
-func httpGet(url string) (io.ReadCloser, error) {
+func httpGet(url string) (*http.Response, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("http status %s", resp.Status)
+		return nil, fmt.Errorf("tinytown: http status %s", resp.Status)
 	}
-	return resp.Body, nil
+	return resp, nil
 }
