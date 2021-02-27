@@ -37,13 +37,11 @@ func DownloadTorrents(dir string) error {
 	}
 
 	for i, id := range ids {
-		url := "https://archive.org/download/" + id + "/" + id + "_archive.torrent"
 		fmt.Printf("(%d/%d) Adding %s\n", i+1, len(ids), id)
-		filename := filepath.Join(dir, path.Base(url))
-		if err := saveFile(url, filename); err != nil {
+		filename, err := saveTorrentFile(id, dir)
+		if err != nil {
 			return err
 		}
-
 		t, err := c.AddTorrentFromFile(filename)
 		if err != nil {
 			return err
@@ -88,6 +86,12 @@ func GetReleaseIDs() ([]string, error) {
 		ids[i] = item.Identifier
 	}
 	return ids, nil
+}
+
+func saveTorrentFile(id, dir string) (string, error) {
+	url := "https://archive.org/download/" + id + "/" + id + "_archive.torrent"
+	filename := filepath.Join(dir, path.Base(url))
+	return filename, saveFile(url, filename)
 }
 
 func saveFile(url, filename string) error {
