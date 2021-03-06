@@ -14,6 +14,9 @@ import (
 	"time"
 )
 
+// Selective old dumps available at:
+// https://web.archive.org/web/*/https://dumps.wikimedia.org/other/shorturls/*
+
 // DownloadDumps saves all short URL dumps to the given directory.
 func DownloadDumps(dir string) error {
 	dumps, err := GetDumps()
