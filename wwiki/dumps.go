@@ -96,6 +96,7 @@ func httpGet(url string) (*http.Response, error) {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
 		return nil, fmt.Errorf("wwiki: http status %s", resp.Status)
 	}
 	return resp, nil
