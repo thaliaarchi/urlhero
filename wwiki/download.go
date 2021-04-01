@@ -12,10 +12,9 @@ import (
 	"path"
 	"path/filepath"
 	"time"
-)
 
-// Selective old dumps available at:
-// https://web.archive.org/web/*/https://dumps.wikimedia.org/other/shorturls/*
+	"github.com/andrewarchi/urlteam/ia"
+)
 
 // DownloadDumps saves all short URL dumps to the given directory.
 func DownloadDumps(dir string) error {
@@ -61,4 +60,36 @@ func downloadDump(dump DumpInfo, dir string) error {
 		return os.Chtimes(name, mt, mt)
 	}
 	return nil
+}
+
+// IADumpInfo contains basic Internet Archive metadata on a short URL
+// dump.
+type IADumpInfo struct {
+	URL       string
+	Timestamp string
+	Digest    string
+}
+
+// GetIADumps retrieves information on all short URL dumps that have
+// been archived by the Internet Archive.
+func GetIADumps() ([]IADumpInfo, error) {
+	timemap, err := ia.GetTimemap("https://dumps.wikimedia.org/other/shorturls/", &ia.TimemapOptions{
+		MatchPrefix: true,
+		Collapse:    "digest",
+		Fields:      []string{"original", "timestamp", "mimetype", "statuscode", "digest"},
+		Limit:       100000,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	dumps := make([]IADumpInfo, 0, len(timemap)-1) // Skip header row
+	for _, d := range timemap[1:] {
+		original, timestamp, mimetype, statuscode, digest := d[0], d[1], d[2], d[3], d[4]
+		// Exclude the index file and include early non-gzipped dumps.
+		if statuscode == "200" && (mimetype == "application/octet-stream" || mimetype == "text/plain") {
+			dumps = append(dumps, IADumpInfo{original, timestamp, digest})
+		}
+	}
+	return dumps, nil
 }
