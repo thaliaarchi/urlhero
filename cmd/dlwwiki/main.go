@@ -18,7 +18,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "usage: %s dir\n", os.Args[0])
 		os.Exit(2)
 	}
-	err := wwiki.DownloadDumps(os.Args[1])
+	dir := os.Args[1]
+	try(wwiki.DownloadDumps(dir))
+	try(wwiki.DownloadIADumps(dir))
+}
+
+func try(err error) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

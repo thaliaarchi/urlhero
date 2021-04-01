@@ -7,7 +7,9 @@
 package wwiki
 
 import (
+	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -23,26 +25,49 @@ func DownloadDumps(dir string) error {
 		return err
 	}
 	for _, dump := range dumps {
-		if err := downloadDump(dump, dir); err != nil {
+		out := filepath.Join(dir, path.Base(dump.URL.Path))
+		if err := downloadDump(dump.URL.String(), out); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func downloadDump(dump DumpInfo, dir string) error {
-	name := filepath.Join(dir, path.Base(dump.URL.Path))
-	if _, err := os.Stat(name); err == nil {
+// DownloadIADumps saves all short URL dumps that have been archived by
+// the Internet Archive to the given directory.
+func DownloadIADumps(dir string) error {
+	dumps, err := GetIADumps()
+	if err != nil {
+		return err
+	}
+	for _, dump := range dumps {
+		iaURL := fmt.Sprintf("https://web.archive.org/web/%sif_/%s", dump.Timestamp, dump.URL)
+		u, err := url.Parse(dump.URL)
+		if err != nil {
+			return err
+		}
+		out := filepath.Join(dir, path.Base(u.Path))
+		if err := downloadDump(iaURL, out); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func downloadDump(url, out string) error {
+	fmt.Println("Downloading", url)
+	// TODO check ETag and IA digest
+	if _, err := os.Stat(out); err == nil {
 		// Skip existing
 		return nil
 	}
-	f, err := os.Create(name)
+	f, err := os.Create(out)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	resp, err := httpGet(dump.URL.String())
+	resp, err := httpGet(url)
 	if err != nil {
 		return err
 	}
@@ -52,12 +77,16 @@ func downloadDump(dump DumpInfo, dir string) error {
 		return err
 	}
 
-	if mod := resp.Header.Get("Last-Modified"); mod != "" {
+	mod := resp.Header.Get("Last-Modified")
+	if mod == "" {
+		mod = resp.Header.Get("X-Archive-Orig-Last-Modified")
+	}
+	if mod != "" {
 		mt, err := time.Parse(time.RFC1123, mod)
 		if err != nil {
 			return err
 		}
-		return os.Chtimes(name, mt, mt)
+		return os.Chtimes(out, mt, mt)
 	}
 	return nil
 }
@@ -86,7 +115,7 @@ func GetIADumps() ([]IADumpInfo, error) {
 	dumps := make([]IADumpInfo, 0, len(timemap)-1) // Skip header row
 	for _, d := range timemap[1:] {
 		original, timestamp, mimetype, statuscode, digest := d[0], d[1], d[2], d[3], d[4]
-		// Exclude the index file and include early non-gzipped dumps.
+		// Exclude the index file and include early non-gzipped dumps
 		if statuscode == "200" && (mimetype == "application/octet-stream" || mimetype == "text/plain") {
 			dumps = append(dumps, IADumpInfo{original, timestamp, digest})
 		}
