@@ -7,6 +7,8 @@
 package wwiki
 
 import (
+	"bytes"
+	"crypto/sha1"
 	"fmt"
 	"io"
 	"net/url"
@@ -26,7 +28,7 @@ func DownloadDumps(dir string) error {
 	}
 	for _, dump := range dumps {
 		out := filepath.Join(dir, path.Base(dump.URL.Path))
-		if err := downloadDump(dump.URL.String(), out); err != nil {
+		if err := downloadDump(dump.URL.String(), out, nil); err != nil {
 			return err
 		}
 	}
@@ -47,20 +49,36 @@ func DownloadIADumps(dir string) error {
 			return err
 		}
 		out := filepath.Join(dir, path.Base(u.Path))
-		if err := downloadDump(iaURL, out); err != nil {
+		if err := downloadDump(iaURL, out, dump.SHA1[:]); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func downloadDump(url, out string) error {
+func downloadDump(url, out string, sha1Sum []byte) error {
 	fmt.Println("Downloading", url)
-	// TODO check ETag and IA digest
+	// Skip existing
 	if _, err := os.Stat(out); err == nil {
-		// Skip existing
+		// Check that existing file matches expected checksum
+		if sha1Sum != nil {
+			f, err := os.Open(out)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			h := sha1.New()
+			if _, err := io.Copy(h, f); err != nil {
+				return err
+			}
+			if s := h.Sum(nil); !bytes.Equal(s, sha1Sum) {
+				return fmt.Errorf("ia: validate %s: SHA-1 sum on disk %x does not match %x in header", url, s, sha1Sum)
+			}
+		}
+		// TODO check ETag, if it is a checksum
 		return nil
 	}
+
 	f, err := os.Create(out)
 	if err != nil {
 		return err
@@ -96,7 +114,7 @@ func downloadDump(url, out string) error {
 type IADumpInfo struct {
 	URL       string
 	Timestamp string
-	Digest    string
+	SHA1      [20]byte
 }
 
 // GetIADumps retrieves information on all short URL dumps that have
@@ -117,7 +135,11 @@ func GetIADumps() ([]IADumpInfo, error) {
 		original, timestamp, mimetype, statuscode, digest := d[0], d[1], d[2], d[3], d[4]
 		// Exclude the index file and include early non-gzipped dumps
 		if statuscode == "200" && (mimetype == "application/octet-stream" || mimetype == "text/plain") {
-			dumps = append(dumps, IADumpInfo{original, timestamp, digest})
+			sha1, err := ia.DecodeDigest(digest)
+			if err != nil {
+				return nil, err
+			}
+			dumps = append(dumps, IADumpInfo{original, timestamp, *sha1})
 		}
 	}
 	return dumps, nil

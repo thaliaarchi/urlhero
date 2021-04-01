@@ -140,10 +140,10 @@ func (rv *ReadValidator) validate() error {
 	if err := rv.validateSum("MD5", rv.md5Hash, rv.md5Sum); err != nil {
 		return err
 	}
-	if err := rv.validateSum("SHA1", rv.sha1Hash, rv.sha1Sum); err != nil {
+	if err := rv.validateSum("SHA-1", rv.sha1Hash, rv.sha1Sum); err != nil {
 		return err
 	}
-	return rv.validateSum("CRC32", rv.crc32Hash, rv.crc32Sum)
+	return rv.validateSum("CRC-32", rv.crc32Hash, rv.crc32Sum)
 }
 
 func (rv *ReadValidator) validateSum(kind string, hash hash.Hash, sum []byte) error {
