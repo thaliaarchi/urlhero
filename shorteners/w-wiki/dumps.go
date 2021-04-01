@@ -47,7 +47,7 @@ func GetDumps() ([]DumpInfo, error) {
 	}
 	pre := findFirst(doc, atom.Pre)
 	if pre == nil {
-		return nil, errors.New("wwiki: no pre element")
+		return nil, errors.New("w-wiki: no pre element")
 	}
 	var dumps []DumpInfo
 	err = eachChild(pre, atom.A, func(a *html.Node) error {
@@ -62,13 +62,13 @@ func GetDumps() ([]DumpInfo, error) {
 		u := baseURL.ResolveReference(rel)
 
 		if a.NextSibling.Type != html.TextNode {
-			return fmt.Errorf("eeiki: no time and size for %s", href)
+			return fmt.Errorf("w-wiki: no time and size for %s", href)
 		}
 		text := strings.TrimSpace(a.NextSibling.Data)
 
 		i := strings.LastIndexByte(text, ' ')
 		if i == -1 {
-			return fmt.Errorf("wwiki: cannot split time and size for %s", href)
+			return fmt.Errorf("w-wiki: cannot split time and size for %s", href)
 		}
 		timeStr := strings.TrimSpace(text[:i])
 		sizeStr := text[i+1:]
@@ -97,7 +97,7 @@ func httpGet(url string) (*http.Response, error) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
-		return nil, fmt.Errorf("wwiki: http status %s", resp.Status)
+		return nil, fmt.Errorf("w-wiki: http status %s", resp.Status)
 	}
 	return resp, nil
 }

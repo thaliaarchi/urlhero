@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/andrewarchi/urlteam/wwiki"
+	wwiki "github.com/andrewarchi/urlteam/shorteners/w-wiki"
 )
 
 func main() {
