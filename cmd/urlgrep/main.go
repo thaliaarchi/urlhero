@@ -11,8 +11,8 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/andrewarchi/urlteam/beacon"
-	"github.com/andrewarchi/urlteam/tinytown"
+	"github.com/andrewarchi/urlhero/beacon"
+	"github.com/andrewarchi/urlhero/tinytown"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 	re, err := regexp.Compile(pattern)
 	try(err)
 
-	processLink := func(l *beacon.Link, m *tinytown.Meta, shortcodeLen int) error {
+	processLink := func(l *beacon.Link, m *tinytown.Meta, shortcodeLen int, releaseFilename, dumpFilename string) error {
 		if re.MatchString(l.Target) {
 			fmt.Println(l.Target)
 		}

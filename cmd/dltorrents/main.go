@@ -11,7 +11,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/andrewarchi/urlteam/tinytown"
+	"github.com/andrewarchi/urlhero/tinytown"
 )
 
 func main() {

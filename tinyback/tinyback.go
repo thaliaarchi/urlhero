@@ -15,8 +15,8 @@ import (
 	"strings"
 
 	"github.com/andrewarchi/archive"
-	"github.com/andrewarchi/urlteam/beacon"
-	"github.com/andrewarchi/urlteam/ia"
+	"github.com/andrewarchi/urlhero/beacon"
+	"github.com/andrewarchi/urlhero/ia"
 )
 
 // Scraper: https://github.com/ArchiveTeam/tinyback

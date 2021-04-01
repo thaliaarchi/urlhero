@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/andrewarchi/urlteam/ia"
+	"github.com/andrewarchi/urlhero/ia"
 )
 
 // DownloadDumps saves all short URL dumps to the given directory.

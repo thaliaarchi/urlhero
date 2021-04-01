@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	"github.com/andrewarchi/archive"
-	"github.com/andrewarchi/urlteam/beacon"
+	"github.com/andrewarchi/urlhero/beacon"
 )
 
 // Meta contains link dump metadata from a *.meta.json.xz file.
