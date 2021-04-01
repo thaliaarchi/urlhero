@@ -81,19 +81,30 @@ func ReadFileMeta(filename string) ([]FileMeta, error) {
 	return meta.Files, nil
 }
 
-func (fm *FileMeta) OpenValidator(dir string) (*ReadValidateCloser, error) {
+func (fm *FileMeta) OpenValidator(dir string) (io.ReadCloser, error) {
 	f, err := os.Open(filepath.Join(dir, fm.Name))
 	if err != nil {
 		return nil, err
 	}
-	return &ReadValidateCloser{ReadValidator: *fm.Validator(f), rc: f}, nil
+	return &readValidateCloser{Reader: fm.Validator(f), rc: f}, nil
 }
 
-func (fm *FileMeta) Validator(r io.Reader) *ReadValidator {
-	return newReadValidator(r, fm.Name, fm.MD5, fm.SHA1, fm.CRC32)
+func (fm *FileMeta) Validator(r io.Reader) io.Reader {
+	return NewReadValidator(r, fm.Name, fm.MD5, fm.SHA1, fm.CRC32)
 }
 
-type ReadValidator struct {
+func ValidateFile(filename string, md5Sum, sha1Sum, crc32Sum []byte) error {
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	v := NewReadValidator(f, filename, md5Sum, sha1Sum, crc32Sum)
+	_, err = io.Copy(io.Discard, v)
+	return err
+}
+
+type readValidator struct {
 	r         io.Reader
 	name      string
 	md5Hash   hash.Hash
@@ -104,13 +115,13 @@ type ReadValidator struct {
 	crc32Sum  []byte
 }
 
-type ReadValidateCloser struct {
-	ReadValidator
+type readValidateCloser struct {
+	io.Reader
 	rc io.ReadCloser
 }
 
-func newReadValidator(r io.Reader, name string, md5Sum, sha1Sum, crc32Sum []byte) *ReadValidator {
-	rv := &ReadValidator{r: r, name: name, md5Sum: md5Sum, sha1Sum: sha1Sum, crc32Sum: crc32Sum}
+func NewReadValidator(r io.Reader, name string, md5Sum, sha1Sum, crc32Sum []byte) io.Reader {
+	rv := &readValidator{r: r, name: name, md5Sum: md5Sum, sha1Sum: sha1Sum, crc32Sum: crc32Sum}
 	if len(md5Sum) != 0 {
 		rv.md5Hash = md5.New()
 		rv.r = io.TeeReader(rv.r, rv.md5Hash)
@@ -126,7 +137,7 @@ func newReadValidator(r io.Reader, name string, md5Sum, sha1Sum, crc32Sum []byte
 	return rv
 }
 
-func (rv *ReadValidator) Read(p []byte) (n int, err error) {
+func (rv *readValidator) Read(p []byte) (n int, err error) {
 	n, err = rv.r.Read(p)
 	if err == io.EOF {
 		if err1 := rv.validate(); err1 != nil {
@@ -136,7 +147,7 @@ func (rv *ReadValidator) Read(p []byte) (n int, err error) {
 	return n, err
 }
 
-func (rv *ReadValidator) validate() error {
+func (rv *readValidator) validate() error {
 	if err := rv.validateSum("MD5", rv.md5Hash, rv.md5Sum); err != nil {
 		return err
 	}
@@ -146,7 +157,7 @@ func (rv *ReadValidator) validate() error {
 	return rv.validateSum("CRC-32", rv.crc32Hash, rv.crc32Sum)
 }
 
-func (rv *ReadValidator) validateSum(kind string, hash hash.Hash, sum []byte) error {
+func (rv *readValidator) validateSum(kind string, hash hash.Hash, sum []byte) error {
 	if hash != nil {
 		s := hash.Sum(nil)
 		if !bytes.Equal(s, sum) {
@@ -156,4 +167,4 @@ func (rv *ReadValidator) validateSum(kind string, hash hash.Hash, sum []byte) er
 	return nil
 }
 
-func (rv *ReadValidateCloser) Close() error { return rv.rc.Close() }
+func (rv *readValidateCloser) Close() error { return rv.rc.Close() }

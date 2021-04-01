@@ -7,8 +7,6 @@
 package wwiki
 
 import (
-	"bytes"
-	"crypto/sha1"
 	"fmt"
 	"io"
 	"net/url"
@@ -60,20 +58,8 @@ func downloadDump(url, out string, sha1Sum []byte) error {
 	fmt.Println("Downloading", url)
 	// Skip existing
 	if _, err := os.Stat(out); err == nil {
-		// Check that existing file matches expected checksum
 		if sha1Sum != nil {
-			f, err := os.Open(out)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			h := sha1.New()
-			if _, err := io.Copy(h, f); err != nil {
-				return err
-			}
-			if s := h.Sum(nil); !bytes.Equal(s, sha1Sum) {
-				return fmt.Errorf("ia: validate %s: SHA-1 sum on disk %x does not match %x in header", url, s, sha1Sum)
-			}
+			return ia.ValidateFile(out, nil, sha1Sum, nil)
 		}
 		// TODO check ETag, if it is a checksum
 		return nil
@@ -91,7 +77,11 @@ func downloadDump(url, out string, sha1Sum []byte) error {
 	}
 	defer resp.Body.Close()
 
-	if _, err := io.Copy(f, resp.Body); err != nil {
+	var r io.Reader = resp.Body
+	if sha1Sum != nil {
+		r = ia.NewReadValidator(r, url, nil, sha1Sum, nil)
+	}
+	if _, err := io.Copy(f, r); err != nil {
 		return err
 	}
 
