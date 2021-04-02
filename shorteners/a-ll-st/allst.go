@@ -8,43 +8,23 @@
 package allst
 
 import (
-	"net/url"
-	"sort"
+	"regexp"
 	"strings"
 
-	"github.com/andrewarchi/urlhero/ia"
+	"github.com/andrewarchi/urlhero/shorteners"
 )
 
+// GetIAShortcodes queries all the shortcodes that have been archived on
+// the Internet Archive.
 func GetIAShortcodes() ([]string, error) {
-	timemap, err := ia.GetTimemap("a.ll.st", &ia.TimemapOptions{
-		Collapse:    "original",
-		Fields:      []string{"original"},
-		MatchPrefix: true,
-		Limit:       100000,
-	})
-	if err != nil {
-		return nil, err
-	}
-	shortcodesMap := make(map[string]struct{})
-	var shortcodes []string
-	for _, link := range timemap {
-		// Remove query parameters:
-		//   http://a.ll.st/agentlocatorTW?linkId=88456333
-		//   http://a.ll.st/PP45AJ?utm_sourcex3dplus.url.google.comx26utm_mediumx3dreferral
-		u, err := url.Parse(link[0])
-		if err != nil {
-			return nil, err
-		}
-		shortcode := strings.TrimPrefix(u.Path, "/")
+	// Underscore is only allowed for vanity URLs.
+	alpha := regexp.MustCompile("^[0-9A-Za-z_]+$")
+	clean := func(shortcode string) string {
 		// Remove trailing JSON for some social media shortcodes:
 		//   http://a.ll.st/Facebook","navigationEndpoint
 		//   http://a.ll.st/Instagram","isCrawlable":true,"thumbnail
 		if i := strings.IndexByte(shortcode, '"'); i != -1 {
 			shortcode = shortcode[:i]
-		}
-		switch shortcode {
-		case "", "robots.txt", "favicon.ico":
-			continue
 		}
 		// Remove /scmf/ID/ prefix:
 		//   http://a.ll.st/scmf/OrMCe04Lcp0lODk0BD1FrBcO2E4FP0NMEHFGSZ--Pq5q7EdIBj5D0RZwQ0r5O5LJxfQiUmcjxE_yFyVUmcC7Ue52R7KC2DlT6j1Anuut1CVBLh2fal1IZic40eX4xD2dJTg/PrJJpv
@@ -52,16 +32,14 @@ func GetIAShortcodes() ([]string, error) {
 		if strings.HasPrefix(shortcode, "scmf/") {
 			shortcode = shortcode[strings.LastIndexByte(shortcode, '/')+1:]
 		}
-		if _, ok := shortcodesMap[shortcode]; !ok {
-			shortcodesMap[shortcode] = struct{}{}
-			shortcodes = append(shortcodes, shortcode)
-		}
+		return shortcode
 	}
-	sort.Slice(shortcodes, func(i, j int) bool {
+	less := func(a, b string) bool {
 		// Sort 6-character generated codes before vanity codes.
-		si, sj := shortcodes[i], shortcodes[j]
-		return (len(si) == len(sj) && si < sj) ||
-			(len(si) == 6 && len(sj) != 6) || len(si) < len(sj)
-	})
-	return shortcodes, nil
+		aVanity := len(a) != 6 || strings.Contains(a, "_")
+		bVanity := len(b) != 6 || strings.Contains(b, "_")
+		return (len(a) == len(b) && aVanity == bVanity && a < b) ||
+			(!aVanity && bVanity) || len(a) < len(b)
+	}
+	return shorteners.GetIAShortcodes("a.ll.st", alpha, clean, less)
 }
