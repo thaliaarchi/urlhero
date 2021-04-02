@@ -49,6 +49,7 @@ type ProcessFunc func(l *beacon.Link, m *Meta, shortcodeLen int, releaseFilename
 // ProcessReleases processes every release in a directory by calling fn
 // on every link.
 func ProcessReleases(root string, fn ProcessFunc) error {
+	// TODO allow user to skip releases or projects.
 	rootContents, err := ioutil.ReadDir(root)
 	if err != nil {
 		return err
