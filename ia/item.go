@@ -41,3 +41,9 @@ func ReadItemMeta(dir string) (*ItemMeta, error) {
 	}
 	return &meta, nil
 }
+
+const TimestampFormat = "20060102150405"
+
+func PageURL(url, timestamp string) string {
+	return "https://web.archive.org/web/" + timestamp + "id_/" + url
+}

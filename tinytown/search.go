@@ -46,7 +46,7 @@ func SearchReleases(root, shortener string, shortcodes []string) ([]*beacon.Link
 			// lengths being searched for.
 			fn := func(l *beacon.Link, m *Meta, shortcodeLen int, releaseFilename, dumpFilename string) error {
 				if _, ok := shortcodeMap[l.Source]; ok {
-					fmt.Println(l)
+					fmt.Printf("%s|%q\n", l.Source, l.Target)
 					links = append(links, l)
 				}
 				return nil

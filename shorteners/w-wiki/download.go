@@ -41,7 +41,7 @@ func DownloadIADumps(dir string) error {
 		return err
 	}
 	for _, dump := range dumps {
-		iaURL := fmt.Sprintf("https://web.archive.org/web/%sif_/%s", dump.Timestamp, dump.URL)
+		iaURL := ia.PageURL(dump.URL, dump.Timestamp)
 		u, err := url.Parse(dump.URL)
 		if err != nil {
 			return err

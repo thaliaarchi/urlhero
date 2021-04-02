@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -169,12 +170,12 @@ func processLinkDump(f *zip.File, filename string, meta *Meta, fn ProcessFunc) e
 
 	shortcodeLen := len(filepath.Base(f.Name)) - len(".txt.xz")
 	br := beacon.NewURLTeamReader(xr, shortcodeLen)
-	fmt.Printf("%s:%s ", filepath.Base(filename), f.Name)
+	fmt.Fprintf(os.Stderr, "%s:%s ", filepath.Base(filename), f.Name)
 	n := 0
 	for {
 		link, err := br.Read()
 		if err != nil {
-			fmt.Printf("[%d links]\n", n)
+			fmt.Fprintf(os.Stderr, "[%d links]\n", n)
 			if err == io.EOF {
 				return nil
 			}
