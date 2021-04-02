@@ -120,8 +120,8 @@ func GetIADumps() ([]IADumpInfo, error) {
 		return nil, err
 	}
 
-	dumps := make([]IADumpInfo, 0, len(timemap)-1) // Skip header row
-	for _, d := range timemap[1:] {
+	dumps := make([]IADumpInfo, 0, len(timemap))
+	for _, d := range timemap {
 		original, timestamp, mimetype, statuscode, digest := d[0], d[1], d[2], d[3], d[4]
 		// Exclude the index file and include early non-gzipped dumps
 		if statuscode == "200" && (mimetype == "application/octet-stream" || mimetype == "text/plain") {
