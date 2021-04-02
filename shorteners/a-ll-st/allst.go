@@ -26,6 +26,10 @@ func GetIAShortcodes() ([]string, error) {
 		if i := strings.IndexByte(shortcode, '"'); i != -1 {
 			shortcode = shortcode[:i]
 		}
+		switch shortcode {
+		case "favicon.ico", "robots.txt":
+			return ""
+		}
 		// Remove /scmf/ID/ prefix:
 		//   http://a.ll.st/scmf/OrMCe04Lcp0lODk0BD1FrBcO2E4FP0NMEHFGSZ--Pq5q7EdIBj5D0RZwQ0r5O5LJxfQiUmcjxE_yFyVUmcC7Ue52R7KC2DlT6j1Anuut1CVBLh2fal1IZic40eX4xD2dJTg/PrJJpv
 		//   http://a.ll.st/scmf/OrMCe04Lcp0lODk2Bzg71hcM2079O8ZJEHE_NJu-wtVr7D9JB0U8qWl1RzYCRZPJxfQiUmcjxE_yF9swgNxdUAkTP4vGed-VJvLu3uityvkzL-5fGDGJnyV0iKf6RXKdJQ/hiddenworldofdata

@@ -17,7 +17,8 @@ import (
 )
 
 // GetIAShortcodes queries all the shortcodes that have been archived on
-// the Internet Archive.
+// the Internet Archive. If alpha, clean, or less are nil, defaults will be
+// used.
 func GetIAShortcodes(shortener string, alpha *regexp.Regexp, clean func(shortcode string) string, less func(i, j string) bool) ([]string, error) {
 	timemap, err := ia.GetTimemap(shortener, &ia.TimemapOptions{
 		Collapse:    "original",
@@ -35,17 +36,27 @@ func GetIAShortcodes(shortener string, alpha *regexp.Regexp, clean func(shortcod
 		if err != nil {
 			return nil, err
 		}
-		shortcode := clean(strings.TrimPrefix(u.Path, "/"))
-		switch shortcode {
-		case "", "favicon.ico", "robots.txt":
+		shortcode := strings.TrimPrefix(u.Path, "/")
+		if shortcode == "" {
 			continue
 		}
-		if !alpha.MatchString(shortcode) {
+		if clean != nil {
+			shortcode = clean(shortcode)
+		}
+		if shortcode == "" {
+			continue
+		}
+		if alpha != nil && !alpha.MatchString(shortcode) {
 			return nil, fmt.Errorf("shorteners: %s shortcode does not match alphabet %s after cleaning: %s", shortener, alpha, shortcode)
 		}
 		if _, ok := shortcodesMap[shortcode]; !ok {
 			shortcodesMap[shortcode] = struct{}{}
 			shortcodes = append(shortcodes, shortcode)
+		}
+	}
+	if less == nil {
+		less = func(a, b string) bool {
+			return (len(a) == len(b) && a < b) || len(a) < len(b)
 		}
 	}
 	sort.Slice(shortcodes, func(i, j int) bool {

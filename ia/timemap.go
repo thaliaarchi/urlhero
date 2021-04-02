@@ -57,7 +57,9 @@ func GetTimemap(pageURL string, options *TimemapOptions) ([][]string, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&timemap); err != nil {
 		return nil, err
 	}
-	timemap = timemap[1:] // Skip header row
+	if len(timemap) >= 1 {
+		timemap = timemap[1:] // Skip header row
+	}
 	return timemap, nil
 }
 
