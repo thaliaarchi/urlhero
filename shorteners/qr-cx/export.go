@@ -11,10 +11,28 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
+
+func DownloadExport(dir string) error {
+	url := "https://web.archive.org/web/20151229075230id_/http://qr.cx/dataset/qrcx_all_06eec9b9-1f29-4860-bd91-49c2d517d87d.7z"
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	f, err := os.Create(filepath.Join(dir, filepath.Base(url)))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, resp.Body)
+	return err
+}
 
 type Link struct {
 	ShortURL, URL string
