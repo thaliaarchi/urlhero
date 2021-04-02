@@ -27,7 +27,7 @@ import (
 
 func Validate(dir string) error {
 	metaName := filepath.Base(dir) + "_files.xml"
-	files, err := ReadFileMeta(filepath.Join(dir, metaName))
+	files, err := ReadFileMeta(dir)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,9 @@ func Validate(dir string) error {
 		if err != nil {
 			return err
 		}
-		if _, err := io.Copy(ioutil.Discard, fv); err != nil {
+		_, err = io.Copy(ioutil.Discard, fv)
+		fv.Close()
+		if err != nil {
 			return err
 		}
 	}
@@ -51,6 +53,8 @@ type filesMeta struct {
 	Files []FileMeta `xml:"file"`
 }
 
+// FileMeta contains file metadata listed in the *_files.xml file in the
+// root of an item. This file is excluded for torrent downloads.
 type FileMeta struct {
 	Name     string          `xml:"name,attr"`   // filename, relative to root
 	Source   string          `xml:"source,attr"` // "original", "metadata", or "derivative"
@@ -68,8 +72,9 @@ type FileMeta struct {
 	Private  bool            `xml:"private"`
 }
 
-func ReadFileMeta(filename string) ([]FileMeta, error) {
-	f, err := os.Open(filename)
+func ReadFileMeta(dir string) ([]FileMeta, error) {
+	name := filepath.Base(dir) + "_files.xml"
+	f, err := os.Open(filepath.Join(dir, name))
 	if err != nil {
 		return nil, err
 	}
