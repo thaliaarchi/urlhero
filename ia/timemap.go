@@ -31,27 +31,26 @@ func GetTimemap(pageURL string, options *TimemapOptions) ([][]string, error) {
 	q := make(url.Values)
 	q.Set("url", pageURL)
 	q.Set("output", "json") // other values: "csv" and omitted
-	if options.MatchPrefix {
-		q.Set("matchType", "prefix") // other values unknown
-	}
-	if options.Collapse != "" {
-		q.Set("collapse", options.Collapse)
-	}
-	if len(options.Fields) != 0 {
-		q.Set("fl", strings.Join(options.Fields, ","))
-	}
-	if options.Limit > 0 {
-		q.Set("limit", strconv.Itoa(options.Limit))
+	if options != nil {
+		if options.MatchPrefix {
+			q.Set("matchType", "prefix") // other values unknown
+		}
+		if options.Collapse != "" {
+			q.Set("collapse", options.Collapse)
+		}
+		if len(options.Fields) != 0 {
+			q.Set("fl", strings.Join(options.Fields, ","))
+		}
+		if options.Limit > 0 {
+			q.Set("limit", strconv.Itoa(options.Limit))
+		}
 	}
 
-	resp, err := http.Get("https://web.archive.org/web/timemap/?" + q.Encode())
+	resp, err := checkResponse(http.Get("https://web.archive.org/web/timemap/?" + q.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ia: http status %s", resp.Status)
-	}
 
 	var timemap [][]string
 	if err := json.NewDecoder(resp.Body).Decode(&timemap); err != nil {
@@ -97,4 +96,12 @@ func digestAlpha(ch byte, digest string) (byte, error) {
 	default:
 		return 0, fmt.Errorf("ia: illegal byte %q in digest: %q", ch, digest)
 	}
+}
+
+func checkResponse(resp *http.Response, err error) (*http.Response, error) {
+	if err == nil && resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("ia: http status %s", resp.Status)
+	}
+	return resp, err
 }
