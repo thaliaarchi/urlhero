@@ -43,8 +43,8 @@ func GetIAShortcodes() ([]string, error) {
 		// Sort 6-character generated codes before vanity codes.
 		aVanity := len(a) != 6 || strings.Contains(a, "_")
 		bVanity := len(b) != 6 || strings.Contains(b, "_")
-		return (len(a) == len(b) && aVanity == bVanity && a < b) ||
-			(!aVanity && bVanity) || len(a) < len(b)
+		return (aVanity == bVanity && ((len(a) == len(b) && a < b) || len(a) < len(b))) ||
+			(!aVanity && bVanity)
 	}
 	return shorteners.GetIAShortcodes("a.ll.st", alpha, clean, less)
 }
