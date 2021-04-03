@@ -19,7 +19,7 @@ import (
 // GetIAShortcodes queries all the shortcodes that have been archived on
 // the Internet Archive. If alpha, clean, or less are nil, defaults will be
 // used.
-func GetIAShortcodes(shortener string, alpha *regexp.Regexp, clean func(shortcode string) string, less func(i, j string) bool) ([]string, error) {
+func GetIAShortcodes(shortener string, alpha *regexp.Regexp, clean func(shortcode string, u *url.URL) string, less func(i, j string) bool) ([]string, error) {
 	timemap, err := ia.GetTimemap(shortener, &ia.TimemapOptions{
 		Collapse:    "original",
 		Fields:      []string{"original"},
@@ -41,7 +41,7 @@ func GetIAShortcodes(shortener string, alpha *regexp.Regexp, clean func(shortcod
 			continue
 		}
 		if clean != nil {
-			shortcode = clean(shortcode)
+			shortcode = clean(shortcode, u)
 		}
 		if shortcode == "" {
 			continue

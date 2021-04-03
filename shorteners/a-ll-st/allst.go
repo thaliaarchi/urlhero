@@ -4,10 +4,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// Package allst handles Allstates's a.ll.st link shortener.
+// Package allst handles the Allstate a.ll.st link shortener.
 package allst
 
 import (
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -19,7 +20,7 @@ import (
 func GetIAShortcodes() ([]string, error) {
 	// Underscore is only allowed for vanity URLs.
 	alpha := regexp.MustCompile("^[0-9A-Za-z_]+$")
-	clean := func(shortcode string) string {
+	clean := func(shortcode string, u *url.URL) string {
 		// Remove trailing JSON for some social media shortcodes:
 		//   http://a.ll.st/Facebook","navigationEndpoint
 		//   http://a.ll.st/Instagram","isCrawlable":true,"thumbnail

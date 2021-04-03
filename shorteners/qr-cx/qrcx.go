@@ -4,9 +4,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// Package qrcx handles the qr.cx link shortener.
 package qrcx
 
 import (
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -17,14 +19,14 @@ import (
 // the Internet Archive.
 func GetIAShortcodes() ([]string, error) {
 	alpha := regexp.MustCompile("^[1-9A-HJ-Za-z]+$") // TODO
-	clean := func(shortcode string) string {
+	clean := func(shortcode string, u *url.URL) string {
 		// Skip URL in path and files:
 		//   http://qr.cx:80/http://qr.cx
 		//   http://qr.cx:80/deleted.php
 		if strings.Contains(shortcode, ".") || shortcode == "about:blank" {
 			return ""
 		}
-		// Remove closing link:
+		// Remove closing link junk:
 		//   http://qr.cx/plvd]http:/qr.cx/plvd[/link]
 		//   http://qr.cx/plvd]click
 		//   http://qr.cx/)
