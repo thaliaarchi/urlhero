@@ -7,7 +7,6 @@
 package qrcx
 
 import (
-	"bufio"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -18,7 +17,7 @@ import (
 	"time"
 )
 
-func DownloadExport(dir string) error {
+func DownloadDump(dir string) error {
 	url := "https://web.archive.org/web/20151229075230id_/http://qr.cx/dataset/qrcx_all_06eec9b9-1f29-4860-bd91-49c2d517d87d.7z"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -49,17 +48,18 @@ type ReadCloser struct {
 }
 
 func NewReader(r io.Reader) *Reader {
-	cr := csv.NewReader(newCommentReader(r))
+	cr := csv.NewReader(r)
 	cr.Comma = '\t'
+	cr.Comment = '#'
 	cr.FieldsPerRecord = 3
 	cr.LazyQuotes = true
 	cr.ReuseRecord = true
 	return &Reader{cr}
 }
 
-func OpenExport(filename string) (*ReadCloser, error) {
+func OpenDump(filename string) (*ReadCloser, error) {
 	if !strings.HasSuffix(filename, ".csv") {
-		return nil, fmt.Errorf("qr-cx: export is not a CSV file: %s", filename)
+		return nil, fmt.Errorf("qr-cx: dump is not a CSV file: %s", filename)
 	}
 	f, err := os.Open(filename)
 	if err != nil {
@@ -96,47 +96,4 @@ func (r *Reader) ReadAll() ([]Link, error) {
 
 func (r *ReadCloser) Close() error {
 	return r.rc.Close()
-}
-
-// commentReader skips header lines prefixed with '#'.
-type commentReader struct {
-	br    *bufio.Reader
-	buf   []byte
-	start bool
-}
-
-func newCommentReader(r io.Reader) *commentReader {
-	return &commentReader{bufio.NewReader(r), nil, true}
-}
-
-func (cr *commentReader) Read(p []byte) (n int, err error) {
-	if cr.start {
-		for {
-			var line []byte
-			line, err = cr.br.ReadSlice('\n')
-			if len(line) == 0 || line[0] != '#' {
-				if err == bufio.ErrBufferFull {
-					err = nil
-				}
-				cr.buf = line
-				cr.start = false
-				break
-			}
-			for err == bufio.ErrBufferFull {
-				line, err = cr.br.ReadSlice('\n')
-			}
-			if err != nil {
-				return 0, err
-			}
-		}
-	}
-	if len(cr.buf) != 0 {
-		n = copy(p, cr.buf)
-		cr.buf = cr.buf[n:]
-		return
-	}
-	if err != nil {
-		return
-	}
-	return cr.br.Read(p)
 }
