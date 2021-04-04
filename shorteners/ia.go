@@ -36,7 +36,7 @@ func (s *Shortener) GetIAShortcodes() ([]string, error) {
 			continue
 		}
 		if s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
-			return nil, fmt.Errorf("shorteners: %s shortcode does not match alphabet %s after cleaning: %s", s.Name, s.Pattern, shortcode)
+			return nil, fmt.Errorf("%s: shortcode %q does not match alphabet %s after cleaning: %q", s.Name, shortcode, s.Pattern, link[0])
 		}
 		if _, ok := shortcodesMap[shortcode]; !ok {
 			shortcodesMap[shortcode] = struct{}{}

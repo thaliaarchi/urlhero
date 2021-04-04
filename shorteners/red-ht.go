@@ -14,16 +14,22 @@ import (
 
 // Redht describes the Red Hat red.ht link shortener.
 var Redht = &Shortener{
-	Name:   "red-ht",
-	Host:   "red.ht",
-	Prefix: "https://red.ht/",
-	// TODO meaning of @ is unknown; should it be stripped?
-	Pattern: regexp.MustCompile(`^[0-9A-Za-z\-_@]+$`),
+	Name:    "red-ht",
+	Host:    "red.ht",
+	Prefix:  "https://red.ht/",
+	Pattern: regexp.MustCompile(`^[0-9A-Za-z\-_]+$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {
+		// Exclude static files:
+		//   http://red.ht/static/graphics/fish-404.png
 		if strings.Contains(shortcode, ".") {
 			return ""
 		}
-		shortcode = strings.TrimSuffix(shortcode, "/")
+		// Remove social media @:
+		//   https://red.ht/1H7Wyt1@sklososky@FuturePOV
+		//   https://red.ht/3olOq1B@OpenRoboticsOrg
+		if i := strings.IndexByte(shortcode, '@'); i != -1 {
+			shortcode = shortcode[:i]
+		}
 		return shortcode
 	},
 	LessFunc: func(a, b string) bool {

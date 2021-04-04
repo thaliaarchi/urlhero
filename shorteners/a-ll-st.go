@@ -16,7 +16,7 @@ import (
 var Allst = &Shortener{
 	Name:   "a-ll-st",
 	Host:   "a.ll.st",
-	Prefix: "https://a.ll.st/",
+	Prefix: "http://a.ll.st/",
 	// Underscore is only allowed for vanity URLs.
 	Pattern: regexp.MustCompile(`^[0-9A-Za-z_]+$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {
