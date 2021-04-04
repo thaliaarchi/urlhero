@@ -28,11 +28,7 @@ var Allst = &Shortener{
 		}
 		return shortcode
 	},
-	LessFunc: func(a, b string) bool {
-		// Sort 6-character generated codes before vanity codes.
-		aVanity := len(a) != 6 || strings.Contains(a, "_")
-		bVanity := len(b) != 6 || strings.Contains(b, "_")
-		return (aVanity == bVanity && ((len(a) == len(b) && a < b) || len(a) < len(b))) ||
-			(!aVanity && bVanity)
+	IsVanityFunc: func(shortcode string) bool {
+		return len(shortcode) != 6 || strings.Contains(shortcode, "_")
 	},
 }

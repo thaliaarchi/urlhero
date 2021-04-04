@@ -7,22 +7,26 @@
 package shorteners
 
 import (
+	"fmt"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
+
+	"github.com/andrewarchi/urlhero/ia"
 )
 
 type Shortener struct {
-	Name      string
-	Host      string
-	Prefix    string
-	Pattern   *regexp.Regexp
-	CleanFunc CleanFunc
-	LessFunc  LessFunc
+	Name         string
+	Host         string
+	Prefix       string
+	Pattern      *regexp.Regexp
+	CleanFunc    CleanFunc
+	IsVanityFunc IsVanityFunc
 }
 
 type CleanFunc func(shortcode string, u *url.URL) string
-type LessFunc func(i, j string) bool
+type IsVanityFunc func(shortcode string) bool
 
 var Shorteners = []*Shortener{
 	Allst,
@@ -31,6 +35,8 @@ var Shorteners = []*Shortener{
 	Redht,
 }
 
+// Clean extracts the shortcode from a URL. An empty string is returned
+// when no shortcode can be found.
 func (s *Shortener) Clean(shortURL string) (string, error) {
 	u, err := url.Parse(shortURL)
 	if err != nil {
@@ -67,4 +73,64 @@ func (s *Shortener) Clean(shortURL string) (string, error) {
 		return "", nil
 	}
 	return shortcode, nil
+}
+
+// IsVanity returns true when a shortcode is a vanity code. There are
+// many false negatives for vanity codes that are programmatically
+// indistinguishable from generated codes.
+func (s *Shortener) IsVanity(shortcode string) bool {
+	return s.IsVanityFunc != nil && s.IsVanityFunc(shortcode)
+}
+
+// Sort sorts shorter codes first and generated codes before vanity
+// codes.
+func (s *Shortener) Sort(shortcodes []string) {
+	less := func(a, b string) bool {
+		return (len(a) == len(b) && a < b) || len(a) < len(b)
+	}
+	if s.IsVanityFunc != nil {
+		less = func(a, b string) bool {
+			aVanity := s.IsVanityFunc(a)
+			bVanity := s.IsVanityFunc(b)
+			return (aVanity == bVanity && ((len(a) == len(b) && a < b) || len(a) < len(b))) ||
+				(!aVanity && bVanity)
+		}
+	}
+	sort.Slice(shortcodes, func(i, j int) bool {
+		return less(shortcodes[i], shortcodes[j])
+	})
+}
+
+// GetIAShortcodes queries all the shortcodes that have been archived on
+// the Internet Archive. If alpha, clean, or less are nil, defaults will be
+// used.
+func (s *Shortener) GetIAShortcodes() ([]string, error) {
+	timemap, err := ia.GetTimemap(s.Host, &ia.TimemapOptions{
+		Collapse:    "original",
+		Fields:      []string{"original"},
+		MatchPrefix: true,
+		Limit:       100000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	shortcodesMap := make(map[string]struct{})
+	var shortcodes []string
+	for _, link := range timemap {
+		shortcode, err := s.Clean(link[0])
+		if err != nil {
+			return nil, err
+		} else if shortcode == "" {
+			continue
+		}
+		if s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
+			return nil, fmt.Errorf("%s: shortcode %q does not match alphabet %s after cleaning: %q", s.Name, shortcode, s.Pattern, link[0])
+		}
+		if _, ok := shortcodesMap[shortcode]; !ok {
+			shortcodesMap[shortcode] = struct{}{}
+			shortcodes = append(shortcodes, shortcode)
+		}
+	}
+	s.Sort(shortcodes)
+	return shortcodes, nil
 }

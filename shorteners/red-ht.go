@@ -32,11 +32,7 @@ var Redht = &Shortener{
 		}
 		return shortcode
 	},
-	LessFunc: func(a, b string) bool {
-		// Sort generated codes before vanity codes.
-		aVanity := strings.ContainsAny(a, "-_")
-		bVanity := strings.ContainsAny(b, "-_")
-		return (aVanity == bVanity && ((len(a) == len(b) && a < b) || len(a) < len(b))) ||
-			(!aVanity && bVanity)
+	IsVanityFunc: func(shortcode string) bool {
+		return strings.ContainsAny(shortcode, "-_")
 	},
 }
