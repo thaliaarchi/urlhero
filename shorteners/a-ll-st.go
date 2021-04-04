@@ -14,9 +14,10 @@ import (
 
 // Allst describes the Allstate a.ll.st link shortener.
 var Allst = &Shortener{
-	Name:   "a-ll-st",
-	Host:   "a.ll.st",
-	Prefix: "http://a.ll.st/",
+	Name:     "a-ll-st",
+	Host:     "a.ll.st",
+	Prefix:   "http://a.ll.st/",
+	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 	// Underscore is only allowed for vanity URLs.
 	Pattern: regexp.MustCompile(`^[0-9A-Za-z_]+$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {

@@ -20,6 +20,7 @@ type Shortener struct {
 	Name         string
 	Host         string
 	Prefix       string
+	Alphabet     string
 	Pattern      *regexp.Regexp
 	CleanFunc    CleanFunc
 	IsVanityFunc IsVanityFunc
@@ -33,6 +34,7 @@ var Shorteners = []*Shortener{
 	Debli,
 	Qrcx,
 	Redht,
+	Uconn,
 }
 
 // Clean extracts the shortcode from a URL. An empty string is returned
@@ -61,6 +63,7 @@ func (s *Shortener) Clean(shortURL string) (string, error) {
 	if i := strings.IndexAny(shortcode, "\"])>&’\u00a0"); i != -1 {
 		shortcode = shortcode[:i]
 	}
+	shortcode = strings.TrimSuffix(shortcode, "/")
 	if shortcode == "" {
 		return "", nil
 	}

@@ -26,10 +26,11 @@ import (
 
 // Debli describes the Debian deb.li link shortener.
 var Debli = &Shortener{
-	Name:    "deb-li",
-	Host:    "deb.li",
-	Prefix:  "https://deb.li/",
-	Pattern: regexp.MustCompile(`^(?:[0-9A-Za-z]+|.+@.+)$`),
+	Name:     "deb-li",
+	Host:     "deb.li",
+	Prefix:   "https://deb.li/",
+	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+	Pattern:  regexp.MustCompile(`^(?:[0-9A-Za-z]+|.+@.+)$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {
 		// Keep mailing list redirects as-is:
 		//   https://deb.li/4BE7F84D.5040104@bzed.de

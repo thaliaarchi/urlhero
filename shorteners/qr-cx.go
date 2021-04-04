@@ -14,10 +14,11 @@ import (
 
 // Qrcx describes the qr.cx link shortener.
 var Qrcx = &Shortener{
-	Name:    "qr-cx",
-	Host:    "qr.cx",
-	Prefix:  "http://qr.cx/",
-	Pattern: regexp.MustCompile(`^[1-9A-HJ-Za-z]+$`), // TODO verify that I is missing
+	Name:     "qr-cx",
+	Host:     "qr.cx",
+	Prefix:   "http://qr.cx/",
+	Alphabet: "123456789ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+	Pattern:  regexp.MustCompile(`^[1-9A-HJ-Za-z]+$`), // TODO verify that 0 and I are missing
 	CleanFunc: func(shortcode string, u *url.URL) string {
 		// Skip URL in path and files:
 		//   http://qr.cx:80/http://qr.cx
