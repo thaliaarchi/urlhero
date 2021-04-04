@@ -18,14 +18,8 @@ var Allst = &Shortener{
 	Host:   "a.ll.st",
 	Prefix: "https://a.ll.st/",
 	// Underscore is only allowed for vanity URLs.
-	Pattern: regexp.MustCompile("^[0-9A-Za-z_]+$"),
-	Clean: func(shortcode string, u *url.URL) string {
-		// Remove trailing JSON for some social media shortcodes:
-		//   http://a.ll.st/Facebook","navigationEndpoint
-		//   http://a.ll.st/Instagram","isCrawlable":true,"thumbnail
-		if i := strings.IndexByte(shortcode, '"'); i != -1 {
-			shortcode = shortcode[:i]
-		}
+	Pattern: regexp.MustCompile(`^[0-9A-Za-z_]+$`),
+	CleanFunc: func(shortcode string, u *url.URL) string {
 		// Remove /scmf/ID/ prefix:
 		//   http://a.ll.st/scmf/OrMCe04Lcp0lODk0BD1FrBcO2E4FP0NMEHFGSZ--Pq5q7EdIBj5D0RZwQ0r5O5LJxfQiUmcjxE_yFyVUmcC7Ue52R7KC2DlT6j1Anuut1CVBLh2fal1IZic40eX4xD2dJTg/PrJJpv
 		//   http://a.ll.st/scmf/OrMCe04Lcp0lODk2Bzg71hcM2079O8ZJEHE_NJu-wtVr7D9JB0U8qWl1RzYCRZPJxfQiUmcjxE_yF9swgNxdUAkTP4vGed-VJvLu3uityvkzL-5fGDGJnyV0iKf6RXKdJQ/hiddenworldofdata
@@ -34,7 +28,7 @@ var Allst = &Shortener{
 		}
 		return shortcode
 	},
-	Less: func(a, b string) bool {
+	LessFunc: func(a, b string) bool {
 		// Sort 6-character generated codes before vanity codes.
 		aVanity := len(a) != 6 || strings.Contains(a, "_")
 		bVanity := len(b) != 6 || strings.Contains(b, "_")

@@ -29,8 +29,8 @@ var Debli = &Shortener{
 	Name:    "deb-li",
 	Host:    "deb.li",
 	Prefix:  "https://deb.li/",
-	Pattern: regexp.MustCompile("^(?:[0-9A-Za-z]+|.+@.+)$"),
-	Clean: func(shortcode string, u *url.URL) string {
+	Pattern: regexp.MustCompile(`^(?:[0-9A-Za-z]+|.+@.+)$`),
+	CleanFunc: func(shortcode string, u *url.URL) string {
 		// Exclude placeholders:
 		//   https://deb.li/<name>
 		if shortcode == "<name>" || shortcode == "<key>" {

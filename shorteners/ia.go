@@ -8,9 +8,7 @@ package shorteners
 
 import (
 	"fmt"
-	"net/url"
 	"sort"
-	"strings"
 
 	"github.com/andrewarchi/urlhero/ia"
 )
@@ -31,19 +29,10 @@ func (s *Shortener) GetIAShortcodes() ([]string, error) {
 	shortcodesMap := make(map[string]struct{})
 	var shortcodes []string
 	for _, link := range timemap {
-		u, err := url.Parse(link[0])
+		shortcode, err := s.Clean(link[0])
 		if err != nil {
 			return nil, err
-		}
-		shortcode := strings.TrimPrefix(u.Path, "/")
-		if shortcode == "" {
-			continue
-		}
-		if s.Clean != nil {
-			shortcode = s.Clean(shortcode, u)
-		}
-		switch shortcode {
-		case "", "favicon.ico", "robots.txt":
+		} else if shortcode == "" {
 			continue
 		}
 		if s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
@@ -54,7 +43,7 @@ func (s *Shortener) GetIAShortcodes() ([]string, error) {
 			shortcodes = append(shortcodes, shortcode)
 		}
 	}
-	less := s.Less
+	less := s.LessFunc
 	if less == nil {
 		less = func(a, b string) bool {
 			return (len(a) == len(b) && a < b) || len(a) < len(b)

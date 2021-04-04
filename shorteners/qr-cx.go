@@ -17,23 +17,13 @@ var Qrcx = &Shortener{
 	Name:    "qr-cx",
 	Host:    "qr.cx",
 	Prefix:  "http://qr.cx/",
-	Pattern: regexp.MustCompile("^[1-9A-HJ-Za-z]+$"), // TODO verify that I is missing
-	Clean: func(shortcode string, u *url.URL) string {
+	Pattern: regexp.MustCompile(`^[1-9A-HJ-Za-z]+$`), // TODO verify that I is missing
+	CleanFunc: func(shortcode string, u *url.URL) string {
 		// Skip URL in path and files:
 		//   http://qr.cx:80/http://qr.cx
 		//   http://qr.cx:80/deleted.php
 		if strings.Contains(shortcode, ".") || shortcode == "about:blank" {
 			return ""
-		}
-		// Remove closing link junk:
-		//   http://qr.cx/plvd]http:/qr.cx/plvd[/link]
-		//   http://qr.cx/plvd]click
-		//   http://qr.cx/)
-		if i := strings.IndexByte(shortcode, ']'); i != -1 {
-			shortcode = shortcode[:i]
-		}
-		if i := strings.IndexByte(shortcode, ')'); i != -1 {
-			shortcode = shortcode[:i]
 		}
 		shortcode = strings.TrimSuffix(shortcode, "/")
 		shortcode = strings.TrimSuffix(shortcode, "+") // Alias for /get
