@@ -22,22 +22,23 @@ import (
 )
 
 const usage = `Usage:
-	lookupaliases hosts <hosts>...
-	lookupaliases reverse <rdns.json>`
+	chkalias hosts <hosts>...
+	chkalias lookup <dns.json>`
 
 func main() {
 	if len(os.Args) < 3 {
 		printUsage()
 	}
 	switch os.Args[1] {
-	case "hosts":
+	case "host", "hosts":
 		lookup(os.Args[2:])
-	case "reverse":
+	case "lookup":
 		if len(os.Args) != 3 {
 			printUsage()
 		}
-		records, err := reverseLookup(os.Args[2])
+		records, err := lookupProjectSonar(os.Args[2])
 		if len(records) != 0 {
+			fmt.Println("bit-ly aliases:")
 			for _, r := range records {
 				fmt.Println(r)
 			}
@@ -95,20 +96,20 @@ func lookup(hosts []string) {
 	}
 
 	fmt.Println("Shared IP addresses:")
-	ipsSorted := make([][16]byte, len(ipMap))
+	ipKeys := make([][16]byte, len(ipMap))
 	for ip := range ipMap {
-		ipsSorted = append(ipsSorted, ip)
+		ipKeys = append(ipKeys, ip)
 	}
-	sort.Slice(ipsSorted, func(i, j int) bool {
-		return bytes.Compare(ipsSorted[i][:], ipsSorted[j][:]) < 0
+	sort.Slice(ipKeys, func(i, j int) bool {
+		return bytes.Compare(ipKeys[i][:], ipKeys[j][:]) < 0
 	})
-	for _, ip := range ipsSorted {
+	for _, ip := range ipKeys {
 		hosts := ipMap[ip]
 		if len(hosts) > 1 {
 			fmt.Printf("  %v:", net.IP(ip[:]))
 			for i, host := range hosts {
 				fmt.Print(host)
-				if i != len(ipsSorted)-1 {
+				if i != len(ipKeys)-1 {
 					fmt.Print(", ")
 				}
 			}
@@ -132,21 +133,26 @@ func lookup(hosts []string) {
 }
 
 type DNSRecord struct {
-	Timestamp int64  `json:"timestamp,string"` // Unix timestamp in seconds
-	IP        net.IP `json:"name"`
-	Host      string `json:"value"`
-	Type      string `json:"type"` // "ptr"
+	Time time.Time
+	Host string
+	IP   net.IP
 }
 
 func (r *DNSRecord) String() string {
-	t := time.Unix(r.Timestamp, 0).UTC().Format("2006-01-02 15:04:05")
-	return fmt.Sprintf("%s\t%v\t%s\n", t, r.IP, r.Host)
+	t := r.Time.Format("2006-01-02 15:04:05")
+	return fmt.Sprintf("%s\t%v\t%s\n", t, r.Host, r.IP)
 }
 
-// reverseLookup finds all hosts that resolve to a bit.ly IP, using the
-// Project Sonar reverse DNS dataset from
+// lookupProjectSonar finds all hosts that resolve to a bit.ly IP, using
+// the Project Sonar forward and reverse DNS datasets from
+// https://opendata.rapid7.com/sonar.fdns_v2/ and
 // https://opendata.rapid7.com/sonar.rdns_v2/.
-func reverseLookup(filename string) ([]DNSRecord, error) {
+func lookupProjectSonar(filename string) ([]DNSRecord, error) {
+	// TODO this needs significant work before it can be useful. Forward
+	// DNS has all the intermediate pointers, so the IP address of a host
+	// cannot be determined via a single read pass and a graph database
+	// would be needed. Reverse DNS only contains the authoritative
+	// mappings, so all bit.ly aliases are excluded.
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -162,32 +168,54 @@ func reverseLookup(filename string) ([]DNSRecord, error) {
 		r = gr
 	}
 
+	type dnsRecord struct {
+		Timestamp int64  `json:"timestamp,string"` // Unix timestamp in seconds
+		Name      string `json:"name"`             // FDNS: host, RDNS: IP
+		Value     string `json:"value"`            // FDNS: IP,   RDNS: host
+		Type      string `json:"type"`             // FDNS: "ns", RDNS: "ptr"
+	}
+
 	d := json.NewDecoder(r)
 	d.DisallowUnknownFields()
 	var aliases []DNSRecord
-	var record DNSRecord
 	start := time.Now()
 	last := start
-	n := 0
-	fmt.Println("bit-ly aliases:")
+	n := 1
 	for {
-		if err := d.Decode(&record); err != nil {
+		var r dnsRecord
+		if err := d.Decode(&r); err != nil {
 			if err == io.EOF {
 				break
 			}
 			return aliases, err
 		}
+
+		var host, ip string
+		switch r.Type {
+		case "ns": // forward DNS
+			host, ip = r.Name, r.Value
+		case "ptr": // reverse DNS
+			host, ip = r.Value, r.Name
+		default:
+			return aliases, fmt.Errorf("record %d: unrecognized type %s: %v", n, r.Type, r)
+		}
+		record := DNSRecord{
+			Time: time.Unix(r.Timestamp, 0).UTC(),
+			Host: host,
+			IP:   net.ParseIP(ip),
+		}
+
 		if bitly.IsIPAlias(record.IP) {
 			aliases = append(aliases, record)
-			fmt.Println(record)
+			fmt.Println("Found:", record)
 		}
-		n++
 		if n%1000000 == 0 {
 			now := time.Now()
 			fmt.Printf("Processed %d records in %v (%v elapsed)\n", n, now.Sub(last), now.Sub(start))
 			last = now
 		}
+		n++
 	}
-	fmt.Printf("Processed %d records (%v elapsed)\n", n, time.Since(start))
+	fmt.Printf("Processed %d records (%v elapsed)\n", n-1, time.Since(start))
 	return aliases, nil
 }
