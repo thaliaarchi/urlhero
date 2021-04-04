@@ -1,0 +1,8 @@
+/cmd/dltorrents/dltorrents
+/cmd/dlwwiki/dlwwiki
+/cmd/lookupaliases/lookupaliases
+/cmd/shortlookup/shortlookup
+
+*.csv
+*.gz
+*.7z
