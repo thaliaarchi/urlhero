@@ -24,6 +24,7 @@ type Shortener struct {
 	Pattern      *regexp.Regexp
 	CleanFunc    CleanFunc
 	IsVanityFunc IsVanityFunc
+	HasVanity    bool
 }
 
 type CleanFunc func(shortcode string, u *url.URL) string
@@ -31,6 +32,7 @@ type IsVanityFunc func(shortcode string) bool
 
 var Shorteners = []*Shortener{
 	Allst,
+	Bfytw,
 	Debli,
 	Qrcx,
 	Redht,
@@ -61,6 +63,10 @@ func cleanURL(u *url.URL, clean func(shortcode string, u *url.URL) string) strin
 	if len(shortcode) >= 2 && shortcode[0] == '<' && shortcode[len(shortcode)-1] == '>' {
 		return ""
 	}
+	// Remove trailing periods:
+	//   https://bfy.tw/7JAH.
+	//   https://bfy.tw/LOr7...
+	shortcode = strings.TrimRight(shortcode, ".")
 	// Remove trailing junk:
 	//   http://a.ll.st/Instagram","isCrawlable":true,"thumbnail
 	//   http://qr.cx/plvd]http:/qr.cx/plvd[/link]
@@ -69,23 +75,31 @@ func cleanURL(u *url.URL, clean func(shortcode string, u *url.URL) string) strin
 	//   https://red.ht/1zzgkXp&esheet=51687448&newsitemid=20170921005271&lan=en-US&anchor=Red+Hat+blog&index=5&md5=7ea962d15a0e5bf8e35f385550f4decb
 	//   https://red.ht/13LslKt&quot
 	//   https://red.ht/2k3DNz3’
+	//   https://deb.li/log%20dari%20training%20Debian%20Women%20dengan%20tema%20%22Debian%20package%20informations%22%20dini%20hari%20tadi%20dapat%20dilihat%20di%20http://meetbot.debian.net/debian-women/2010/debian-women.2010-12-16-20.09.log.html
 	//   https://red.ht/21Krw4z%C2%A0   (nbsp)
-	if i := strings.IndexAny(shortcode, "\"])>&’\u00a0"); i != -1 {
+	if i := strings.IndexAny(shortcode, "\"])>&’ \u00a0"); i != -1 {
 		shortcode = shortcode[:i]
 	}
 	shortcode = strings.TrimSuffix(shortcode, "/")
-	if shortcode == "" {
+	if isCommonFile(shortcode) {
 		return ""
 	}
 	if clean != nil {
 		shortcode = clean(shortcode, u)
 	}
 	shortcode = strings.TrimSuffix(shortcode, "/")
-	switch shortcode {
-	case "favicon.ico", "robots.txt":
+	if isCommonFile(shortcode) {
 		return ""
 	}
 	return shortcode
+}
+
+func isCommonFile(shortcode string) bool {
+	switch shortcode {
+	case "", "favicon.ico", "robots.txt":
+		return true
+	}
+	return false
 }
 
 // CleanURLs extracts, deduplicates, and sorts the shortcodes in slice

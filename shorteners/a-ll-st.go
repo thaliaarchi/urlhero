@@ -32,4 +32,5 @@ var Allst = &Shortener{
 	IsVanityFunc: func(shortcode string) bool {
 		return len(shortcode) != 6 || strings.Contains(shortcode, "_")
 	},
+	HasVanity: true,
 }

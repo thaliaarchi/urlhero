@@ -35,4 +35,5 @@ var Uconn = &Shortener{
 	IsVanityFunc: func(shortcode string) bool {
 		return strings.Contains(shortcode, "-")
 	},
+	HasVanity: true,
 }

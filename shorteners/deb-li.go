@@ -44,10 +44,10 @@ var Debli = &Shortener{
 		// Exclude static files and strange URLs:
 		//   https://deb.li/static/pics/openlogo-50.png
 		//   https://deb.li/imprint.html
-		//   https://deb.li/log%20dari%20training%20Debian%20Women%20dengan%20tema%20%22Debian%20package%20informations%22%20dini%20hari%20tadi%20dapat%20dilihat%20di%20http://meetbot.debian.net/debian-women/2010/debian-women.2010-12-16-20.09.log.html
-		if strings.Contains(shortcode, "/") || strings.Contains(u.Path, ".") {
+		if strings.Contains(shortcode, "/") || strings.Contains(shortcode, ".") {
 			return ""
 		}
 		return shortcode
 	},
+	HasVanity: true,
 }

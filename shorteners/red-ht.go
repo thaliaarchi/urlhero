@@ -38,4 +38,5 @@ var Redht = &Shortener{
 	IsVanityFunc: func(shortcode string) bool {
 		return strings.ContainsAny(shortcode, "-_")
 	},
+	HasVanity: true,
 }
