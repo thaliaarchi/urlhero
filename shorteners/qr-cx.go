@@ -14,31 +14,53 @@ import (
 
 // Qrcx describes the qr.cx link shortener.
 var Qrcx = &Shortener{
-	Name:     "qr-cx",
-	Host:     "qr.cx",
-	Prefix:   "http://qr.cx/",
-	Alphabet: "123456789ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-	Pattern:  regexp.MustCompile(`^[1-9A-HJ-Za-z]+$`), // TODO verify that 0 and I are missing
-	CleanFunc: func(shortcode string, u *url.URL) string {
-		// Skip URL in path and files:
-		//   http://qr.cx:80/http://qr.cx
-		//   http://qr.cx:80/deleted.php
-		if strings.Contains(shortcode, ".") || shortcode == "about:blank" {
-			return ""
+	Name:      "qr-cx",
+	Host:      "qr.cx",
+	Prefix:    "http://qr.cx/",
+	Alphabet:  "123456789ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+	Pattern:   regexp.MustCompile(`^[1-9A-HJ-Za-z]+$`),
+	CleanFunc: cleanQrcx,
+}
+
+func cleanQrcx(shortcode string, u *url.URL) string {
+	// Get URL from QR API query string:
+	//   http://qr.cx/qr/php/qr_img.php?e=M&s=9&d=http://qr.cx/1oz
+	if shortcode == "qr/php/qr_img.php" {
+		if d := u.Query().Get("d"); d != "" {
+			u2, err := url.Parse(d)
+			if err != nil || u2.Hostname() != "qr.cx" {
+				return ""
+			}
+			return cleanURL(u2, cleanQrcx)
 		}
-		shortcode = strings.TrimSuffix(shortcode, "/")
-		shortcode = strings.TrimSuffix(shortcode, "+") // Alias for /get
-		dir, path := shortcode, ""
-		if i := strings.IndexByte(shortcode, '/'); i != -1 {
-			dir, path = shortcode[:i], shortcode[i+1:]
+	}
+	// Remove file after shortcode:
+	//   http://qr.cx/itZ/api.php
+	//   http://qr.cx/uqn/piwik.php
+	if i := strings.LastIndexByte(shortcode, '/'); i != -1 {
+		switch shortcode[i+1:] {
+		case "api.php", "piwik.php":
+			shortcode = shortcode[:i]
 		}
-		switch dir {
-		case "admin", "api", "dataset", "img", "qr", "twitterjs":
-			return ""
-		}
-		if path == "get" {
-			shortcode = dir
-		}
-		return shortcode
-	},
+	}
+	// Skip URL in path and files:
+	//   http://qr.cx/http://qr.cx
+	//   http://qr.cx/deleted.php
+	if strings.Contains(shortcode, ".") || shortcode == "about:blank" {
+		return ""
+	}
+	// Remove link previews:
+	//   http://qr.cx/tEv/get
+	//   http://qr.cx/sQ2U+
+	shortcode = strings.TrimSuffix(shortcode, "/get")
+	shortcode = strings.TrimSuffix(shortcode, "+")
+	// Exclude static files:
+	switch shortcode {
+	case "admin", "api", "dataset", "img", "qr", "twitterjs":
+		return ""
+	}
+	if strings.Contains(shortcode, "/") {
+		return ""
+	}
+	return shortcode
 }

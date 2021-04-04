@@ -26,7 +26,7 @@ var Uconn = &Shortener{
 		if strings.Contains(shortcode, "/") {
 			return ""
 		}
-		// Trim period:
+		// Remove period:
 		//   http://s.uconn.edu/ctsrc.
 		shortcode = strings.TrimSuffix(shortcode, ".")
 		// Shortcodes are case-insensitive (generated and vanity):

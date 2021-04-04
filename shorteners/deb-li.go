@@ -37,7 +37,7 @@ var Debli = &Shortener{
 		if strings.Contains(shortcode, "@") {
 			return shortcode
 		}
-		// Strip preview prefix:
+		// Remove preview prefix:
 		//   https://deb.li/p/debian
 		//   https://deb.li/p/1r8d
 		shortcode = strings.TrimPrefix(shortcode, "p/")

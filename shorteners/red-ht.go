@@ -22,7 +22,8 @@ var Redht = &Shortener{
 	Pattern: regexp.MustCompile(`^[0-9A-Za-z\-_]+$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {
 		// Exclude static files:
-		//   http://red.ht/static/graphics/fish-404.png
+		//   https://red.ht/sitemap.xml
+		//   https://red.ht/static/graphics/fish-404.png
 		if strings.Contains(shortcode, ".") {
 			return ""
 		}

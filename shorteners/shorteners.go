@@ -44,12 +44,22 @@ func (s *Shortener) Clean(shortURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return cleanURL(u, s.CleanFunc), nil
+}
+
+// CleanURL extracts the shortcode from a URL. An empty string is
+// returned when no shortcode can be found.
+func (s *Shortener) CleanURL(u *url.URL) string {
+	return cleanURL(u, s.CleanFunc)
+}
+
+func cleanURL(u *url.URL, clean func(shortcode string, u *url.URL) string) string {
 	shortcode := strings.TrimPrefix(u.Path, "/")
 	// Exclude placeholders:
 	//   https://deb.li/<key>
 	//   https://deb.li/<name>
 	if len(shortcode) >= 2 && shortcode[0] == '<' && shortcode[len(shortcode)-1] == '>' {
-		return "", nil
+		return ""
 	}
 	// Remove trailing junk:
 	//   http://a.ll.st/Instagram","isCrawlable":true,"thumbnail
@@ -65,17 +75,41 @@ func (s *Shortener) Clean(shortURL string) (string, error) {
 	}
 	shortcode = strings.TrimSuffix(shortcode, "/")
 	if shortcode == "" {
-		return "", nil
+		return ""
 	}
-	if s.CleanFunc != nil {
-		shortcode = s.CleanFunc(shortcode, u)
+	if clean != nil {
+		shortcode = clean(shortcode, u)
 	}
 	shortcode = strings.TrimSuffix(shortcode, "/")
 	switch shortcode {
 	case "favicon.ico", "robots.txt":
-		return "", nil
+		return ""
 	}
-	return shortcode, nil
+	return shortcode
+}
+
+// CleanURLs extracts, deduplicates, and sorts the shortcodes in slice
+// of URLs.
+func (s *Shortener) CleanURLs(urls []string) ([]string, error) {
+	shortcodesMap := make(map[string]struct{})
+	var shortcodes []string
+	for _, shortURL := range urls {
+		shortcode, err := s.Clean(shortURL)
+		if err != nil {
+			return nil, err
+		} else if shortcode == "" {
+			continue
+		}
+		if s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
+			return nil, fmt.Errorf("%s: shortcode %q does not match alphabet %s after cleaning: %q", s.Name, shortcode, s.Pattern, shortURL)
+		}
+		if _, ok := shortcodesMap[shortcode]; !ok {
+			shortcodesMap[shortcode] = struct{}{}
+			shortcodes = append(shortcodes, shortcode)
+		}
+	}
+	s.Sort(shortcodes)
+	return shortcodes, nil
 }
 
 // IsVanity returns true when a shortcode is a vanity code. There are
@@ -105,8 +139,7 @@ func (s *Shortener) Sort(shortcodes []string) {
 }
 
 // GetIAShortcodes queries all the shortcodes that have been archived on
-// the Internet Archive. If alpha, clean, or less are nil, defaults will be
-// used.
+// the Internet Archive.
 func (s *Shortener) GetIAShortcodes() ([]string, error) {
 	timemap, err := ia.GetTimemap(s.Host, &ia.TimemapOptions{
 		Collapse:    "original",
@@ -117,23 +150,9 @@ func (s *Shortener) GetIAShortcodes() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	shortcodesMap := make(map[string]struct{})
-	var shortcodes []string
-	for _, link := range timemap {
-		shortcode, err := s.Clean(link[0])
-		if err != nil {
-			return nil, err
-		} else if shortcode == "" {
-			continue
-		}
-		if s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
-			return nil, fmt.Errorf("%s: shortcode %q does not match alphabet %s after cleaning: %q", s.Name, shortcode, s.Pattern, link[0])
-		}
-		if _, ok := shortcodesMap[shortcode]; !ok {
-			shortcodesMap[shortcode] = struct{}{}
-			shortcodes = append(shortcodes, shortcode)
-		}
+	urls := make([]string, len(timemap))
+	for i, link := range timemap {
+		urls[i] = link[0]
 	}
-	s.Sort(shortcodes)
-	return shortcodes, nil
+	return s.CleanURLs(urls)
 }
