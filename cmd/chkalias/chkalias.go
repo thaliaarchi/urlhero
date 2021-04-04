@@ -15,6 +15,7 @@ import (
 	"net"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -169,10 +170,10 @@ func lookupProjectSonar(filename string) ([]DNSRecord, error) {
 	}
 
 	type dnsRecord struct {
-		Timestamp int64  `json:"timestamp,string"` // Unix timestamp in seconds
-		Name      string `json:"name"`             // FDNS: host, RDNS: IP
-		Value     string `json:"value"`            // FDNS: IP,   RDNS: host
-		Type      string `json:"type"`             // FDNS: "ns", RDNS: "ptr"
+		Timestamp string `json:"timestamp"` // Unix timestamp in seconds
+		Name      string `json:"name"`      // FDNS: host, RDNS: IP
+		Value     string `json:"value"`     // FDNS: IP,   RDNS: host
+		Type      string `json:"type"`      // FDNS: "ns", RDNS: "ptr"
 	}
 
 	d := json.NewDecoder(r)
@@ -187,9 +188,17 @@ func lookupProjectSonar(filename string) ([]DNSRecord, error) {
 			if err == io.EOF {
 				break
 			}
+			if _, ok := err.(*json.SyntaxError); ok {
+				fmt.Fprintf(os.Stderr, "record %d: %v\n", n, err)
+				continue
+			}
 			return aliases, err
 		}
 
+		timestamp, err := strconv.ParseInt(r.Timestamp, 10, 64)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "record %d: %v: %v\n", n, r, err)
+		}
 		var host, ip string
 		switch r.Type {
 		case "ns": // forward DNS
@@ -197,10 +206,11 @@ func lookupProjectSonar(filename string) ([]DNSRecord, error) {
 		case "ptr": // reverse DNS
 			host, ip = r.Value, r.Name
 		default:
-			return aliases, fmt.Errorf("record %d: unrecognized type %s: %v", n, r.Type, r)
+			fmt.Fprintf(os.Stderr, "record %d: unrecognized type %s: %v\n", n, r.Type, r)
+			continue
 		}
 		record := DNSRecord{
-			Time: time.Unix(r.Timestamp, 0).UTC(),
+			Time: time.Unix(timestamp, 0).UTC(),
 			Host: host,
 			IP:   net.ParseIP(ip),
 		}
