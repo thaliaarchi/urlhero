@@ -140,24 +140,32 @@ Not a host
 	feedly.com/k/
 */
 
-// IsAlias checks whether the domain is a bit.ly alias.
-func IsAlias(domain string) (bool, error) {
-	// Check if the IP is in the range 67.199.248.10 to 67.199.248.13.
-	lo := binary.BigEndian.Uint32([]byte{67, 199, 248, 10})
-	hi := binary.BigEndian.Uint32([]byte{67, 199, 248, 13})
-	ips, err := net.LookupIP(domain)
+// IsAlias checks whether the host is a bit.ly alias.
+func IsAlias(host string) (bool, error) {
+	ips, err := net.LookupIP(host)
 	if err != nil {
 		return false, err
 	}
+	return IsIPAlias(ips...), nil
+}
+
+var (
+	aliasLo = binary.BigEndian.Uint32([]byte{67, 199, 248, 10})
+	aliasHi = binary.BigEndian.Uint32([]byte{67, 199, 248, 13})
+)
+
+// IsIPAlias checks whether any IP addresses are a bit.ly alias.
+func IsIPAlias(ips ...net.IP) bool {
+	// Check if the IP is in the range 67.199.248.10 to 67.199.248.13.
 	for _, ip := range ips {
 		ip = ip.To4()
 		if ip == nil {
 			continue
 		}
 		ip4 := binary.BigEndian.Uint32(ip)
-		if lo <= ip4 && ip4 <= hi {
-			return true, nil
+		if aliasLo <= ip4 && ip4 <= aliasHi {
+			return true
 		}
 	}
-	return false, nil
+	return false
 }
