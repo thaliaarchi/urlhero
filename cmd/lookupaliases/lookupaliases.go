@@ -43,12 +43,12 @@ func main() {
 		})
 		hostInfo = append(hostInfo, hostIP{host, ips})
 
-		fmt.Printf("  %s: ", host)
+		fmt.Printf("  %s:\t", host)
 		for i, ip := range ips {
-			if i != 0 {
-				fmt.Print(",")
+			fmt.Print(ip)
+			if i != len(ips)-1 {
+				fmt.Print(", ")
 			}
-			fmt.Printf(" %v", ip)
 			ip6 := ip.To16()
 			if ip6 == nil {
 				continue
@@ -73,10 +73,10 @@ func main() {
 		if len(hosts) > 1 {
 			fmt.Printf("  %v:", net.IP(ip[:]))
 			for i, host := range hosts {
-				if i != 0 {
-					fmt.Print(",")
+				fmt.Print(host)
+				if i != len(ipsSorted)-1 {
+					fmt.Print(", ")
 				}
-				fmt.Printf(" %s", host)
 			}
 			fmt.Println()
 		}
