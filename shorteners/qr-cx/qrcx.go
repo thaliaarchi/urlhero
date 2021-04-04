@@ -15,11 +15,12 @@ import (
 	"github.com/andrewarchi/urlhero/shorteners"
 )
 
-// GetIAShortcodes queries all the shortcodes that have been archived on
-// the Internet Archive.
-func GetIAShortcodes() ([]string, error) {
-	alpha := regexp.MustCompile("^[1-9A-HJ-Za-z]+$") // TODO
-	clean := func(shortcode string, u *url.URL) string {
+var Qrcx = &shorteners.Shortener{
+	Name:    "qr-cx",
+	Host:    "qr.cx",
+	Prefix:  "http://qr.cx/",
+	Pattern: regexp.MustCompile("^[1-9A-HJ-Za-z]+$"), // TODO verify that I is missing
+	Clean: func(shortcode string, u *url.URL) string {
 		// Skip URL in path and files:
 		//   http://qr.cx:80/http://qr.cx
 		//   http://qr.cx:80/deleted.php
@@ -50,6 +51,5 @@ func GetIAShortcodes() ([]string, error) {
 			shortcode = dir
 		}
 		return shortcode
-	}
-	return shorteners.GetIAShortcodes("qr.cx", alpha, clean, nil)
+	},
 }

@@ -18,20 +18,21 @@ import (
 // Source: https://github.com/bzed/go.debian.net
 // Beta test announcement: https://lists.debian.org/debian-devel/2010/05/msg00248.html
 
-// GetIAShortcodes queries all the shortcodes that have been archived on
-// the Internet Archive.
-func GetIAShortcodes() ([]string, error) {
-	// deb.li has three types of URLs:
-	//   generated shortcode:
-	//     https://deb.li/ijEl
-	//   vanity shortcode (case sensitive):
-	//     https://deb.li/DTAuthors
-	//   Debian mailing list redirect:
-	//     https://deb.li/4BE7F84D.5040104@bzed.de
-	//     https://deb.li/<message-id> -> https://lists.debian.org/msgid-search/<message-id>
+// deb.li has three types of URLs:
+//   generated shortcode:
+//     https://deb.li/ijEl
+//   vanity shortcode (case sensitive):
+//     https://deb.li/DTAuthors
+//   Debian mailing list redirect:
+//     https://deb.li/4BE7F84D.5040104@bzed.de
+//     https://deb.li/<message-id> -> https://lists.debian.org/msgid-search/<message-id>
 
-	alpha := regexp.MustCompile("^(?:[0-9A-Za-z]+|.+@.+)$")
-	clean := func(shortcode string, u *url.URL) string {
+var Debli = &shorteners.Shortener{
+	Name:    "deb-li",
+	Host:    "deb.li",
+	Prefix:  "https://deb.li/",
+	Pattern: regexp.MustCompile("^(?:[0-9A-Za-z]+|.+@.+)$"),
+	Clean: func(shortcode string, u *url.URL) string {
 		// Exclude placeholders:
 		//   https://deb.li/<name>
 		if shortcode == "<name>" || shortcode == "<key>" {
@@ -57,6 +58,5 @@ func GetIAShortcodes() ([]string, error) {
 		//   https://deb.li/3wrwh&
 		shortcode = strings.TrimSuffix(shortcode, "&")
 		return shortcode
-	}
-	return shorteners.GetIAShortcodes("deb.li", alpha, clean, nil)
+	},
 }

@@ -15,21 +15,18 @@ import (
 	"github.com/andrewarchi/urlhero/shorteners"
 )
 
-// GetIAShortcodes queries all the shortcodes that have been archived on
-// the Internet Archive.
-func GetIAShortcodes() ([]string, error) {
+var Allst = &shorteners.Shortener{
+	Name:   "a-ll-st",
+	Host:   "a.ll.st",
+	Prefix: "https://a.ll.st/",
 	// Underscore is only allowed for vanity URLs.
-	alpha := regexp.MustCompile("^[0-9A-Za-z_]+$")
-	clean := func(shortcode string, u *url.URL) string {
+	Pattern: regexp.MustCompile("^[0-9A-Za-z_]+$"),
+	Clean: func(shortcode string, u *url.URL) string {
 		// Remove trailing JSON for some social media shortcodes:
 		//   http://a.ll.st/Facebook","navigationEndpoint
 		//   http://a.ll.st/Instagram","isCrawlable":true,"thumbnail
 		if i := strings.IndexByte(shortcode, '"'); i != -1 {
 			shortcode = shortcode[:i]
-		}
-		switch shortcode {
-		case "favicon.ico", "robots.txt":
-			return ""
 		}
 		// Remove /scmf/ID/ prefix:
 		//   http://a.ll.st/scmf/OrMCe04Lcp0lODk0BD1FrBcO2E4FP0NMEHFGSZ--Pq5q7EdIBj5D0RZwQ0r5O5LJxfQiUmcjxE_yFyVUmcC7Ue52R7KC2DlT6j1Anuut1CVBLh2fal1IZic40eX4xD2dJTg/PrJJpv
@@ -38,13 +35,12 @@ func GetIAShortcodes() ([]string, error) {
 			shortcode = shortcode[strings.LastIndexByte(shortcode, '/')+1:]
 		}
 		return shortcode
-	}
-	less := func(a, b string) bool {
+	},
+	Less: func(a, b string) bool {
 		// Sort 6-character generated codes before vanity codes.
 		aVanity := len(a) != 6 || strings.Contains(a, "_")
 		bVanity := len(b) != 6 || strings.Contains(b, "_")
 		return (aVanity == bVanity && ((len(a) == len(b) && a < b) || len(a) < len(b))) ||
 			(!aVanity && bVanity)
-	}
-	return shorteners.GetIAShortcodes("a.ll.st", alpha, clean, less)
+	},
 }

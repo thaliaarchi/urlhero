@@ -9,7 +9,6 @@ package shorteners
 import (
 	"fmt"
 	"net/url"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -19,8 +18,8 @@ import (
 // GetIAShortcodes queries all the shortcodes that have been archived on
 // the Internet Archive. If alpha, clean, or less are nil, defaults will be
 // used.
-func GetIAShortcodes(shortener string, alpha *regexp.Regexp, clean func(shortcode string, u *url.URL) string, less func(i, j string) bool) ([]string, error) {
-	timemap, err := ia.GetTimemap(shortener, &ia.TimemapOptions{
+func (s *Shortener) GetIAShortcodes() ([]string, error) {
+	timemap, err := ia.GetTimemap(s.Host, &ia.TimemapOptions{
 		Collapse:    "original",
 		Fields:      []string{"original"},
 		MatchPrefix: true,
@@ -40,20 +39,22 @@ func GetIAShortcodes(shortener string, alpha *regexp.Regexp, clean func(shortcod
 		if shortcode == "" {
 			continue
 		}
-		if clean != nil {
-			shortcode = clean(shortcode, u)
+		if s.Clean != nil {
+			shortcode = s.Clean(shortcode, u)
 		}
-		if shortcode == "" {
+		switch shortcode {
+		case "", "favicon.ico", "robots.txt":
 			continue
 		}
-		if alpha != nil && !alpha.MatchString(shortcode) {
-			return nil, fmt.Errorf("shorteners: %s shortcode does not match alphabet %s after cleaning: %s", shortener, alpha, shortcode)
+		if s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
+			return nil, fmt.Errorf("shorteners: %s shortcode does not match alphabet %s after cleaning: %s", s.Name, s.Pattern, shortcode)
 		}
 		if _, ok := shortcodesMap[shortcode]; !ok {
 			shortcodesMap[shortcode] = struct{}{}
 			shortcodes = append(shortcodes, shortcode)
 		}
 	}
+	less := s.Less
 	if less == nil {
 		less = func(a, b string) bool {
 			return (len(a) == len(b) && a < b) || len(a) < len(b)
