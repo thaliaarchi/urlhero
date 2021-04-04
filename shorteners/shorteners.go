@@ -22,3 +22,10 @@ type Shortener struct {
 
 type CleanFunc func(shortcode string, u *url.URL) string
 type LessFunc func(i, j string) bool
+
+var Shorteners = []*Shortener{
+	Allst,
+	Debli,
+	Qrcx,
+	Redht,
+}

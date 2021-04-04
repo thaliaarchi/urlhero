@@ -4,18 +4,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// Package qrcx handles the qr.cx link shortener.
-package qrcx
+package shorteners
 
 import (
 	"net/url"
 	"regexp"
 	"strings"
-
-	"github.com/andrewarchi/urlhero/shorteners"
 )
 
-var Qrcx = &shorteners.Shortener{
+// Qrcx describes the qr.cx link shortener.
+var Qrcx = &Shortener{
 	Name:    "qr-cx",
 	Host:    "qr.cx",
 	Prefix:  "http://qr.cx/",

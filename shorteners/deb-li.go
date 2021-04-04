@@ -4,20 +4,17 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// Package debli handles the Debian deb.li link shortener.
-package debli
+package shorteners
 
 import (
 	"net/url"
 	"regexp"
 	"strings"
-
-	"github.com/andrewarchi/urlhero/shorteners"
 )
 
 // Source: https://github.com/bzed/go.debian.net
 // Beta test announcement: https://lists.debian.org/debian-devel/2010/05/msg00248.html
-
+//
 // deb.li has three types of URLs:
 //   generated shortcode:
 //     https://deb.li/ijEl
@@ -27,7 +24,8 @@ import (
 //     https://deb.li/4BE7F84D.5040104@bzed.de
 //     https://deb.li/<message-id> -> https://lists.debian.org/msgid-search/<message-id>
 
-var Debli = &shorteners.Shortener{
+// Debli describes the Debian deb.li link shortener.
+var Debli = &Shortener{
 	Name:    "deb-li",
 	Host:    "deb.li",
 	Prefix:  "https://deb.li/",

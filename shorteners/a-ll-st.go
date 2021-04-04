@@ -4,18 +4,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-// Package allst handles the Allstate a.ll.st link shortener.
-package allst
+package shorteners
 
 import (
 	"net/url"
 	"regexp"
 	"strings"
-
-	"github.com/andrewarchi/urlhero/shorteners"
 )
 
-var Allst = &shorteners.Shortener{
+// Allst describes the Allstate a.ll.st link shortener.
+var Allst = &Shortener{
 	Name:   "a-ll-st",
 	Host:   "a.ll.st",
 	Prefix: "https://a.ll.st/",
