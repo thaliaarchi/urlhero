@@ -8,21 +8,49 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"os"
+	"os/signal"
 	"sort"
+	"strings"
+	"syscall"
+	"time"
 
 	bitly "github.com/andrewarchi/urlhero/shorteners/bit-ly"
 )
 
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: %s hosts...\n", os.Args[0])
-		os.Exit(2)
-	}
-	hosts := os.Args[1:]
+const usage = `Usage:
+	lookupaliases hosts <hosts>...
+	lookupaliases reverse <rdns.json>`
 
+func main() {
+	if len(os.Args) < 3 {
+		printUsage()
+	}
+	switch os.Args[1] {
+	case "hosts":
+		lookup(os.Args[2:])
+	case "reverse":
+		if len(os.Args) != 3 {
+			printUsage()
+		}
+		if err := reverseLookup(os.Args[2]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+}
+
+func printUsage() {
+	fmt.Fprintln(os.Stderr, usage)
+	os.Exit(2)
+}
+
+func lookup(hosts []string) {
 	type hostIP struct {
 		host string
 		ips  []net.IP
@@ -94,5 +122,78 @@ func main() {
 		for _, err := range errs {
 			fmt.Printf("  %v\n", err)
 		}
+	}
+}
+
+type DNSEntry struct {
+	Timestamp int64  `json:"timestamp,string"` // Unix timestamp
+	IP        net.IP `json:"name"`
+	Host      string `json:"value"`
+	Type      string `json:"type"` // "ptr"
+}
+
+// reverseLookup finds all hosts that resolve to a bit.ly IP, using the
+// Project Sonar reverse DNS dataset from
+// https://opendata.rapid7.com/sonar.rdns_v2/.
+func reverseLookup(filename string) ([]DNSEntry, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	r := io.Reader(f)
+	if strings.HasSuffix(filename, ".gz") {
+		gr, err := gzip.NewReader(f)
+		if err != nil {
+			return nil, err
+		}
+		defer gr.Close()
+		r = gr
+	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGPIPE)
+	types := make(map[string]struct{})
+	go func() {
+		<-c
+		printTypes(types)
+		os.Exit(1)
+	}()
+
+	d := json.NewDecoder(r)
+	d.DisallowUnknownFields()
+	var entry DNSEntry
+	var aliases []DNSEntry
+	start := time.Now()
+	last := start
+	n := 0
+	fmt.Println("bit-ly aliases:")
+	for {
+		if err := d.Decode(&entry); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return aliases, err
+		}
+		if bitly.IsIPAlias(entry.IP) {
+			fmt.Println(entry)
+		}
+		types[entry.Type] = struct{}{}
+		n++
+		if n%1000000 == 0 {
+			now := time.Now()
+			fmt.Printf("Processed %d records in %v (%v elapsed)\n", n, now.Sub(last), now.Sub(start))
+			last = now
+		}
+	}
+	fmt.Printf("Processed %d records (%v elapsed)\n", n, time.Since(start))
+	printTypes(types)
+	return aliases, nil
+}
+
+func printTypes(types map[string]struct{}) {
+	fmt.Println("Values for `type`:")
+	for typ := range types {
+		fmt.Println(typ)
 	}
 }
