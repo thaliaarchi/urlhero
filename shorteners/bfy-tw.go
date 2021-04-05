@@ -16,7 +16,7 @@ import (
 var Bfytw = &Shortener{
 	Name:     "bfy-tw",
 	Host:     "bfy.tw",
-	Prefix:   "https://bfy.tw/",
+	Prefix:   "https://bfy.tw/", // Older links use http
 	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 	Pattern:  regexp.MustCompile(`^[0-9A-Za-z]+$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {
@@ -32,6 +32,7 @@ var Bfytw = &Shortener{
 		//   https://bfy.tw/4jz9ip124.41.235.255
 		return bfytwPattern.ReplaceAllLiteralString(shortcode, "")
 	},
+	HasVanity: false,
 }
 
 var bfytwPattern = regexp.MustCompile("/?(?:https?://.+|[/.].*|favicon.ico|robots.txt)?=?$")

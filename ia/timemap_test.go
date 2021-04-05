@@ -23,15 +23,15 @@ func TestDecodeDigest(t *testing.T) {
 		{"76POXGGRGPS6NJXWUIM4WHD5SNZ5CA6Q", "ff9eeb98d133e5e6a6f6a219cb1c7d9373d103d0"},
 		{"4PVTM2ICN6HDOXXJ4YIX44DR66IA5RV4", "e3eb3669026f8e375ee9e6117e7071f7900ec6bc"},
 	}
-	for _, test := range tests {
-		sha1, err := hex.DecodeString(test.sha1)
+	for _, tt := range tests {
+		sha1, err := hex.DecodeString(tt.sha1)
 		if err != nil {
 			t.Error(err)
 			continue
 		}
-		b, err := DecodeDigest(test.digest)
+		b, err := DecodeDigest(tt.digest)
 		if err != nil {
-			t.Errorf("DecodeDigest(%q) %v", test.digest, err)
+			t.Errorf("DecodeDigest(%q) %v", tt.digest, err)
 			continue
 		}
 		if !bytes.Equal(b[:], sha1) {

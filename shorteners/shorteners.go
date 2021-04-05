@@ -36,9 +36,10 @@ var Shorteners = []*Shortener{
 	Allst,
 	Bfytw,
 	Debli,
+	GoHawaiiEdu,
 	Qrcx,
-	Redht,
-	Uconn,
+	RedHt,
+	SUconnEdu,
 }
 
 var Lookup = make(map[string]*Shortener)
@@ -91,10 +92,12 @@ func cleanURL(u *url.URL, clean CleanFunc) string {
 	//   https://red.ht/sig>
 	//   https://red.ht/1zzgkXp&esheet=51687448&newsitemid=20170921005271&lan=en-US&anchor=Red+Hat+blog&index=5&md5=7ea962d15a0e5bf8e35f385550f4decb
 	//   https://red.ht/13LslKt&quot
+	//   http://go.hawaii.edu/j7L;
 	//   https://red.ht/2k3DNz3’
 	//   https://deb.li/log%20dari%20training%20Debian%20Women%20dengan%20tema%20%22Debian%20package%20informations%22%20dini%20hari%20tadi%20dapat%20dilihat%20di%20http://meetbot.debian.net/debian-women/2010/debian-women.2010-12-16-20.09.log.html
 	//   https://red.ht/21Krw4z%C2%A0   (nbsp)
-	if i := strings.IndexAny(shortcode, "\"])>&’ \u00a0"); i != -1 {
+	// Escape sequences are non-breaking and zero-width spaces
+	if i := strings.IndexAny(shortcode, "\"])>&;’ \u00a0\u200B"); i != -1 {
 		shortcode = shortcode[:i]
 	}
 	shortcode = strings.TrimSuffix(shortcode, "/")
@@ -186,4 +189,18 @@ func (s *Shortener) GetIAShortcodes() ([]string, error) {
 		urls[i] = link[0]
 	}
 	return s.CleanURLs(urls)
+}
+
+func splitByte(s string, c byte) (string, string) {
+	if i := strings.IndexByte(s, c); i != -1 {
+		return s[:i], s[i+1:]
+	}
+	return s, ""
+}
+
+func trimAfterByte(s string, c byte) string {
+	if i := strings.IndexByte(s, c); i != -1 {
+		return s[:i]
+	}
+	return s
 }

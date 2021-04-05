@@ -20,6 +20,7 @@ var Qrcx = &Shortener{
 	Alphabet:  "123456789ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 	Pattern:   regexp.MustCompile(`^[1-9A-HJ-Za-z]+$`),
 	CleanFunc: cleanQrcx,
+	HasVanity: false,
 }
 
 func cleanQrcx(shortcode string, u *url.URL) string {

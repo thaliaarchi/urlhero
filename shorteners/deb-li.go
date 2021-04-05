@@ -28,7 +28,7 @@ import (
 var Debli = &Shortener{
 	Name:     "deb-li",
 	Host:     "deb.li",
-	Prefix:   "https://deb.li/",
+	Prefix:   "https://deb.li/", // Older links use http
 	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 	Pattern:  regexp.MustCompile(`^(?:[0-9A-Za-z]+|.+@.+)$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {

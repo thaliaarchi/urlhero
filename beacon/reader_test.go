@@ -24,14 +24,14 @@ func TestSplitMeta(t *testing.T) {
 		{"FORMAT", MetaField{}, true},
 		{"http://example.org/id/", MetaField{}, true},
 	}
-	for i, test := range tests {
-		meta, err := splitMeta(test.raw)
-		if (err != nil) != test.err {
-			t.Errorf("#%d: splitMeta(%q) got err %v, want %t", i, test.raw, err, test.err)
+	for i, tt := range tests {
+		meta, err := splitMeta(tt.raw)
+		if (err != nil) != tt.err {
+			t.Errorf("#%d: splitMeta(%q) got err %v, want %t", i, tt.raw, err, tt.err)
 			continue
 		}
-		if meta != test.meta {
-			t.Errorf("#%d: splitMeta(%q) got %v, want %v", i, test.raw, meta, test.meta)
+		if meta != tt.meta {
+			t.Errorf("#%d: splitMeta(%q) got %v, want %v", i, tt.raw, meta, tt.meta)
 		}
 	}
 }

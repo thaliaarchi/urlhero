@@ -12,12 +12,12 @@ import (
 	"strings"
 )
 
-// Uconn describes the University of Connecticut s.uconn.edu link
+// SUconnEdu describes the University of Connecticut s.uconn.edu link
 // shortener.
-var Uconn = &Shortener{
+var SUconnEdu = &Shortener{
 	Name:     "s-uconn-edu",
 	Host:     "s.uconn.edu",
-	Prefix:   "https://s.uconn.edu/",
+	Prefix:   "https://s.uconn.edu/", // Older links use http
 	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 	Pattern:  regexp.MustCompile(`^[0-9A-Za-z\-_]+$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {

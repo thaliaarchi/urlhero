@@ -12,11 +12,11 @@ import (
 	"strings"
 )
 
-// Redht describes the Red Hat red.ht link shortener.
-var Redht = &Shortener{
+// RedHt describes the Red Hat red.ht link shortener.
+var RedHt = &Shortener{
 	Name:     "red-ht",
 	Host:     "red.ht",
-	Prefix:   "https://red.ht/",
+	Prefix:   "https://red.ht/", // Older links use http
 	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 	// Underscore and dash are only allowed for vanity URLs.
 	Pattern: regexp.MustCompile(`^[0-9A-Za-z\-_]+$`),
