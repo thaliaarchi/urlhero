@@ -1,8 +1,12 @@
+/cmd/chkalias/chkalias
 /cmd/dltorrents/dltorrents
 /cmd/dlwwiki/dlwwiki
-/cmd/lookupaliases/lookupaliases
+/cmd/getiashortcodes/getiashortcodes
 /cmd/shortlookup/shortlookup
+/cmd/urlgrep/urlgrep
 
 *.csv
 *.gz
+*.zip
+*.rar
 *.7z

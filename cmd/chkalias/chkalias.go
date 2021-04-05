@@ -41,7 +41,7 @@ func main() {
 		if len(records) != 0 {
 			fmt.Println("bit-ly aliases:")
 			for _, r := range records {
-				fmt.Println(r)
+				fmt.Println(&r)
 			}
 		}
 		if err != nil {

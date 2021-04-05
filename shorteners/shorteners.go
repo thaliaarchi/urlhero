@@ -4,6 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+// Package shorteners provides utilities for retrieving information
+// about URL shortening websites.
 package shorteners
 
 import (
@@ -39,6 +41,21 @@ var Shorteners = []*Shortener{
 	Uconn,
 }
 
+var Lookup = make(map[string]*Shortener)
+
+func init() {
+	for _, s := range Shorteners {
+		if _, ok := Lookup[s.Name]; ok {
+			panic(fmt.Errorf("multiple shorteners with name %s", s.Name))
+		}
+		if _, ok := Lookup[s.Host]; ok {
+			panic(fmt.Errorf("multiple shorteners with host %s", s.Host))
+		}
+		Lookup[s.Name] = s
+		Lookup[s.Host] = s
+	}
+}
+
 // Clean extracts the shortcode from a URL. An empty string is returned
 // when no shortcode can be found.
 func (s *Shortener) Clean(shortURL string) (string, error) {
@@ -55,7 +72,7 @@ func (s *Shortener) CleanURL(u *url.URL) string {
 	return cleanURL(u, s.CleanFunc)
 }
 
-func cleanURL(u *url.URL, clean func(shortcode string, u *url.URL) string) string {
+func cleanURL(u *url.URL, clean CleanFunc) string {
 	shortcode := strings.TrimPrefix(u.Path, "/")
 	// Exclude placeholders:
 	//   https://deb.li/<key>
