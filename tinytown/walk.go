@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,7 +50,7 @@ type ProcessFunc func(l *beacon.Link, m *Meta, shortcodeLen int, releaseFilename
 // on every link.
 func ProcessReleases(root string, fn ProcessFunc) error {
 	// TODO allow user to skip releases or projects.
-	rootContents, err := ioutil.ReadDir(root)
+	rootContents, err := os.ReadDir(root)
 	if err != nil {
 		return err
 	}
@@ -60,7 +59,7 @@ func ProcessReleases(root string, fn ProcessFunc) error {
 			continue
 		}
 		dir := filepath.Join(root, release.Name())
-		dirContents, err := ioutil.ReadDir(dir)
+		dirContents, err := os.ReadDir(dir)
 		if err != nil {
 			return err
 		}

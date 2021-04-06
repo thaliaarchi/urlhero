@@ -17,7 +17,6 @@ import (
 	"hash"
 	"hash/crc32"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -40,7 +39,7 @@ func Validate(dir string) error {
 		if err != nil {
 			return err
 		}
-		_, err = io.Copy(ioutil.Discard, fv)
+		_, err = io.Copy(io.Discard, fv)
 		fv.Close()
 		if err != nil {
 			return err

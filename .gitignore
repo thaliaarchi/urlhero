@@ -6,6 +6,7 @@
 /cmd/urlgrep/urlgrep
 
 *.csv
+*.json
 *.gz
 *.zip
 *.rar

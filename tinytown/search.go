@@ -8,7 +8,7 @@ package tinytown
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -22,7 +22,7 @@ func SearchReleases(root, shortener string, shortcodes []string) ([]*beacon.Link
 		shortcodeMap[shortcode] = struct{}{}
 	}
 
-	rootContents, err := ioutil.ReadDir(root)
+	rootContents, err := os.ReadDir(root)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func SearchReleases(root, shortener string, shortcodes []string) ([]*beacon.Link
 			continue
 		}
 		dir := filepath.Join(root, release.Name())
-		dirContents, err := ioutil.ReadDir(dir)
+		dirContents, err := os.ReadDir(dir)
 		if err != nil {
 			return nil, err
 		}
