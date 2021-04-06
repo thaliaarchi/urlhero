@@ -9,6 +9,7 @@
 package shorteners
 
 import (
+	"bytes"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -64,13 +65,17 @@ func (s *Shortener) Clean(shortURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return cleanURL(u, s.CleanFunc), nil
+	return s.CleanURL(u)
 }
 
 // CleanURL extracts the shortcode from a URL. An empty string is
 // returned when no shortcode can be found.
-func (s *Shortener) CleanURL(u *url.URL) string {
-	return cleanURL(u, s.CleanFunc)
+func (s *Shortener) CleanURL(u *url.URL) (string, error) {
+	shortcode := cleanURL(u, s.CleanFunc)
+	if s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
+		return "", fmt.Errorf("%s: shortcode %q does not match alphabet %s after cleaning: %q", s.Name, shortcode, s.Pattern, u)
+	}
+	return shortcode, nil
 }
 
 func cleanURL(u *url.URL, clean CleanFunc) string {
@@ -117,15 +122,14 @@ func isCommonFile(shortcode string) bool {
 func (s *Shortener) CleanURLs(urls []string) ([]string, error) {
 	shortcodesMap := make(map[string]struct{})
 	var shortcodes []string
+	var errs []error
 	for _, shortURL := range urls {
 		shortcode, err := s.Clean(shortURL)
 		if err != nil {
-			return nil, err
+			errs = append(errs, err)
+			continue
 		} else if shortcode == "" {
 			continue
-		}
-		if s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
-			return nil, fmt.Errorf("%s: shortcode %q does not match alphabet %s after cleaning: %q", s.Name, shortcode, s.Pattern, shortURL)
 		}
 		if _, ok := shortcodesMap[shortcode]; !ok {
 			shortcodesMap[shortcode] = struct{}{}
@@ -133,6 +137,9 @@ func (s *Shortener) CleanURLs(urls []string) ([]string, error) {
 		}
 	}
 	s.Sort(shortcodes)
+	if len(errs) != 0 {
+		return shortcodes, &multiError{"CleanURLs", errs}
+	}
 	return shortcodes, nil
 }
 
@@ -193,4 +200,24 @@ func trimAfterByte(s string, c byte) string {
 		return s[:i]
 	}
 	return s
+}
+
+type multiError struct {
+	tag  string
+	errs []error
+}
+
+func (merr *multiError) Error() string {
+	if len(merr.errs) == 0 {
+		return merr.tag
+	}
+	if len(merr.errs) == 1 {
+		return fmt.Sprintf("%s: %s", merr.tag, merr.errs[0])
+	}
+	var b bytes.Buffer
+	fmt.Fprintf(&b, "%s:\n", merr.tag)
+	for _, err := range merr.errs {
+		fmt.Fprintf(&b, "\t%s\n", err)
+	}
+	return b.String()
 }

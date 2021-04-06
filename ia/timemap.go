@@ -41,6 +41,7 @@ func GetTimemap(pageURL string, options *TimemapOptions) ([][]string, error) {
 		if len(options.Fields) != 0 {
 			q.Set("fl", strings.Join(options.Fields, ","))
 		}
+		// TODO paging
 		if options.Limit > 0 {
 			q.Set("limit", strconv.Itoa(options.Limit))
 		}
