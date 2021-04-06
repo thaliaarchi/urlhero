@@ -21,11 +21,14 @@ var GoHawaiiEdu = &Shortener{
 	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 	Pattern:  regexp.MustCompile(`^[0-9A-Za-z]+$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {
-		switch trimAfterByte(shortcode, '/') {
+		if strings.ContainsRune(shortcode, '/') {
+			return ""
+		}
+		switch shortcode {
 		case "admin", "submit":
 			return ""
 		}
-		// Remove link preview
+		// Remove redirect preview
 		return strings.TrimSuffix(shortcode, "+")
 	},
 	HasVanity: false,

@@ -74,7 +74,7 @@ func DecodeDigest(digest string) (*[20]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Fill 5-bit digits into 8-bit bytes:
+		// Fill 5-bit digits into 8-bit bytes
 		x <<= 3
 		b[bit/8] |= x >> (bit % 8)
 		if bit/8 < 19 {

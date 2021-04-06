@@ -21,19 +21,15 @@ var SUconnEdu = &Shortener{
 	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 	Pattern:  regexp.MustCompile(`^[0-9A-Za-z\-_]+$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {
-		// Exclude static files:
-		//   https://s.uconn.edu/css/custom.css
-		if strings.Contains(shortcode, "/") {
+		// Exclude static files
+		if strings.ContainsRune(shortcode, '/') {
 			return ""
 		}
-		// Remove period:
-		//   http://s.uconn.edu/ctsrc.
-		shortcode = strings.TrimSuffix(shortcode, ".")
-		// Shortcodes are case-insensitive (generated and vanity):
+		// Shortcodes are case-insensitive (both generated and vanity)
 		return strings.ToLower(shortcode)
 	},
 	IsVanityFunc: func(shortcode string) bool {
-		return strings.Contains(shortcode, "-")
+		return strings.ContainsRune(shortcode, '-')
 	},
 	HasVanity: true,
 }

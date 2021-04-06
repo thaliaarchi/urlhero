@@ -75,32 +75,22 @@ func (s *Shortener) CleanURL(u *url.URL) string {
 
 func cleanURL(u *url.URL, clean CleanFunc) string {
 	shortcode := strings.TrimPrefix(u.Path, "/")
-	// Exclude placeholders:
-	//   https://deb.li/<key>
-	//   https://deb.li/<name>
-	if len(shortcode) >= 2 && shortcode[0] == '<' && shortcode[len(shortcode)-1] == '>' {
-		return ""
+	// Exclude placeholders like <key>
+	if len(shortcode) >= 2 {
+		s0, s1 := shortcode[0], shortcode[len(shortcode)-1]
+		if (s0 == '<' && s1 == '>') || (s0 == '[' && s1 == ']') {
+			return ""
+		}
 	}
-	// Remove trailing periods:
-	//   https://bfy.tw/7JAH.
-	//   https://bfy.tw/LOr7...
-	shortcode = strings.TrimRight(shortcode, ".")
-	// Remove trailing junk:
-	//   http://a.ll.st/Instagram","isCrawlable":true,"thumbnail
-	//   http://qr.cx/plvd]http:/qr.cx/plvd[/link]
-	//   http://qr.cx/)
-	//   https://red.ht/sig>
-	//   https://red.ht/1zzgkXp&esheet=51687448&newsitemid=20170921005271&lan=en-US&anchor=Red+Hat+blog&index=5&md5=7ea962d15a0e5bf8e35f385550f4decb
-	//   https://red.ht/13LslKt&quot
-	//   http://go.hawaii.edu/j7L;
-	//   https://red.ht/2k3DNz3’
-	//   https://deb.li/log%20dari%20training%20Debian%20Women%20dengan%20tema%20%22Debian%20package%20informations%22%20dini%20hari%20tadi%20dapat%20dilihat%20di%20http://meetbot.debian.net/debian-women/2010/debian-women.2010-12-16-20.09.log.html
-	//   https://red.ht/21Krw4z%C2%A0   (nbsp)
-	// Escape sequences are non-breaking and zero-width spaces
-	if i := strings.IndexAny(shortcode, "\"])>&;’ \u00a0\u200B"); i != -1 {
+	// Remove trailing punctuation
+	shortcode = strings.TrimRight(shortcode, ".;")
+	// Remove trailing junk (escapes are nbsp and zwsp)
+	if i := strings.IndexAny(shortcode, "\"])>&’ \u00a0\u200B"); i != -1 {
 		shortcode = shortcode[:i]
 	}
 	shortcode = strings.TrimSuffix(shortcode, "/")
+	shortcode = trimAfter(shortcode, "http:/")
+	shortcode = trimAfter(shortcode, "https:/")
 	if isCommonFile(shortcode) {
 		return ""
 	}
@@ -191,11 +181,11 @@ func (s *Shortener) GetIAShortcodes() ([]string, error) {
 	return s.CleanURLs(urls)
 }
 
-func splitByte(s string, c byte) (string, string) {
-	if i := strings.IndexByte(s, c); i != -1 {
-		return s[:i], s[i+1:]
+func trimAfter(s string, substr string) string {
+	if i := strings.Index(s, substr); i != -1 {
+		return s[:i]
 	}
-	return s, ""
+	return s
 }
 
 func trimAfterByte(s string, c byte) string {

@@ -25,7 +25,7 @@ var Qrcx = &Shortener{
 
 func cleanQrcx(shortcode string, u *url.URL) string {
 	// Get URL from QR API query string:
-	//   http://qr.cx/qr/php/qr_img.php?e=M&s=9&d=http://qr.cx/1oz
+	//   http://qr.cx/qr/php/qr_img.php?e=M&s=9&d=http://qr.cx/<shortcode>
 	if shortcode == "qr/php/qr_img.php" {
 		if d := u.Query().Get("d"); d != "" {
 			u2, err := url.Parse(d)
@@ -35,33 +35,10 @@ func cleanQrcx(shortcode string, u *url.URL) string {
 			return cleanURL(u2, cleanQrcx)
 		}
 	}
-	// Remove file after shortcode:
-	//   http://qr.cx/itZ/api.php
-	//   http://qr.cx/uqn/piwik.php
-	if i := strings.LastIndexByte(shortcode, '/'); i != -1 {
-		switch shortcode[i+1:] {
-		case "api.php", "piwik.php":
-			shortcode = shortcode[:i]
-		}
-	}
-	// Skip URL in path and files:
-	//   http://qr.cx/http://qr.cx
-	//   http://qr.cx/deleted.php
-	if strings.Contains(shortcode, ".") || shortcode == "about:blank" {
-		return ""
-	}
-	// Remove link previews:
-	//   http://qr.cx/tEv/get
-	//   http://qr.cx/sQ2U+
-	shortcode = strings.TrimSuffix(shortcode, "/get")
-	shortcode = strings.TrimSuffix(shortcode, "+")
-	// Exclude static files:
-	switch shortcode {
-	case "admin", "api", "dataset", "img", "qr", "twitterjs":
-		return ""
-	}
-	if strings.Contains(shortcode, "/") {
-		return ""
-	}
-	return shortcode
+	// Remove file after shortcode
+	shortcode = qrcxFiles.ReplaceAllLiteralString(shortcode, "")
+	// Remove redirect preview
+	return strings.TrimSuffix(shortcode, "+")
 }
+
+var qrcxFiles = regexp.MustCompile(`(?:^|/)(?:admin|api|api\.php|dataset|deleted\.php|get|img|piwik\.php|qr|twitterjs)(?:$|/.*)`)

@@ -32,19 +32,14 @@ var Debli = &Shortener{
 	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 	Pattern:  regexp.MustCompile(`^(?:[0-9A-Za-z]+|.+@.+)$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {
-		// Keep mailing list redirects as-is:
-		//   https://deb.li/4BE7F84D.5040104@bzed.de
-		if strings.Contains(shortcode, "@") {
+		// Keep mailing list redirects as-is
+		if strings.ContainsRune(shortcode, '@') {
 			return shortcode
 		}
-		// Remove preview prefix:
-		//   https://deb.li/p/debian
-		//   https://deb.li/p/1r8d
+		// Remove redirect preview
 		shortcode = strings.TrimPrefix(shortcode, "p/")
-		// Exclude static files and strange URLs:
-		//   https://deb.li/static/pics/openlogo-50.png
-		//   https://deb.li/imprint.html
-		if strings.Contains(shortcode, "/") || strings.Contains(shortcode, ".") {
+		// Exclude static files and strange URLs
+		if strings.ContainsRune(shortcode, '/') || strings.ContainsRune(shortcode, '.') {
 			return ""
 		}
 		return shortcode

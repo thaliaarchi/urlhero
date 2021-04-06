@@ -29,7 +29,7 @@ func main() {
 	s, ok := shorteners.Lookup[shortener]
 	if !ok {
 		var name, host string
-		if strings.Contains(shortener, ".") {
+		if strings.ContainsRune(shortener, '.') {
 			name, host = strings.ReplaceAll(shortener, ".", "-"), shortener
 		} else {
 			name, host = shortener, strings.ReplaceAll(shortener, "-", ".")
