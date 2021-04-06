@@ -35,7 +35,7 @@ var MobyTo = &Shortener{
 			return ""
 		}
 		// Remove : suffix and trailing junk
-		if i := strings.IndexAny(shortcode, ":<«-+*."); i != -1 {
+		if i := strings.IndexAny(shortcode, ":-+*."); i != -1 {
 			shortcode = shortcode[:i]
 		}
 		return strings.ToLower(shortcode)

@@ -63,7 +63,7 @@ func TestClean(t *testing.T) {
 		{GoHawaiiEdu, "http://go.hawaii.edu:80/admin/", ""},
 		{GoHawaiiEdu, "http://go.hawaii.edu:80/admin/index.php?", ""},
 		{GoHawaiiEdu, "http://go.hawaii.edu:80/submit?", ""},
-		{GoHawaiiEdu, "http://go.hawaii.edu:80/%E2%80%8Bhttps://www.star.hawaii.edu/studentinterface", ""}, // zero-width space
+		{GoHawaiiEdu, "http://go.hawaii.edu:80/%E2%80%8Bhttps://www.star.hawaii.edu/studentinterface", ""}, // ZWSP
 		{GoHawaiiEdu, "http://go.hawaii.edu:80/robert-j-elisberg/live-from-ces-day-two-the_b_416265.html", ""},
 
 		{MobyTo, "http://moby.to//8dfstt", "8dfstt"},
@@ -115,12 +115,34 @@ func TestClean(t *testing.T) {
 		{RedHt, "http://red.ht/sitemap.xml", ""},
 		{RedHt, "http://red.ht/static/graphics/fish-404.png", ""},
 
+		{Rbgy, "https://rb.gy/bdb02v+", "bdb02v"}, // redirect preview
+		{Rbgy, "https://rb.gy/auvwlc-", "auvwlc"},
+		{Rbgy, "https://rb.gy/fpkgmy!", "fpkgmy"},
+		{Rbgy, "http://rb.gy/txzznf_", "txzznf"},
+		{Rbgy, "https://rb.gy/5xw62x%00", "5xw62x"},
+		{Rbgy, "https://rb.gy/qntquc.Questions", "qntquc"},
+		// {Rbgy, "http://rb.gy/uku.jog", "ukujog"},
+		{Rbgy, "https://rb.gy/ouvdl3It's", "ouvdl3"},
+		{Rbgy, "https://rb.gy/ddq3vo/UCaujr", "ddq3vo"},
+		{Rbgy, "https://rb.gy/5wsqyxal-text&sr=1-3", "5wsqyx"},
+		{Rbgy, "http://rb.gy/bj4..%3C/PAGE_TITLE%3E", "bj4"},
+		{Rbgy, "https://rb.gy/gz35r7@YouTubeCreators", "gz35r7"},
+		{Rbgy, "https://rb.gy/hjgyijrb.gy/hjgyij", "hjgyij"},
+		{Rbgy, "http://rb.gy/ff7gyg/exercise-with-aerobic-video/", "ff7gyg"},
+		{Rbgy, "https://rb.gy/wlshcv@drninaansary@A_Tabatabai@EllieGeranmayeh@ebtekarm@araghchi@milanimohsen@JafariPeyman@SadeghKharrazi@ahandjani", "wlshcv"},
+		{Rbgy, "https://rb.gy/1zidswv%C3%ADa", "1zidsw"},                                                                 // í
+		{Rbgy, "https://rb.gy/mi6dex%E5%B0%8F%E5%BF%83", "mi6dex"},                                                       // 小心
+		{Rbgy, "https://rb.gy/vnaknf%E0%B8%AA%E0%B8%A1%E0%B8%B1%E0%B8%84%E0%B8%A3%E0%B8%87%E0%B8%B2%E0%B8%99", "vnaknf"}, // สมัครงาน
+		{Rbgy, "https://rb.gy/sef%D0%B4%D0%BE%D0%BBa1x", "sefa1x"},                                                       // дол
+		{Rbgy, "https://rb.gy/etqdt2%E2%97%84", "etqdt2"},                                                                // ◄
+		{Rbgy, "https://rb.gy/etqdt2%e2%97%84%e2%80%8b%e2%80%8b%e2%80%8b", "etqdt2"},                                     // ◄ ZWSP ZWSP ZWSP
+
 		{RedHt, "https://red.ht/sig%3E", "sig"}, // >
 		{RedHt, "https://red.ht/dev-sandbox", "dev-sandbox"},
 		{RedHt, "http://red.ht/1zzgkXp&esheet=51687448&newsitemid=20170921005271&lan=en-US&anchor=Red+Hat+blog&index=5&md5=7ea962d15a0e5bf8e35f385550f4decb", "1zzgkXp"},
 		{RedHt, "http://red.ht/13LslKt&quot", "13LslKt"},
 		{RedHt, "http://red.ht/2k3DNz3%E2%80%99", "2k3DNz3"}, // ’
-		{RedHt, "http://red.ht/21Krw4z%C2%A0", "21Krw4z"},    // non-breaking space
+		{RedHt, "http://red.ht/21Krw4z%C2%A0", "21Krw4z"},    // NBSP
 
 		{SUconnEdu, "http://s.uconn.edu/2by", "2by"},
 		{SUconnEdu, "http://s.uconn.edu/ctsrc.", "ctsrc"},

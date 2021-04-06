@@ -32,7 +32,7 @@ func cleanQrcx(shortcode string, u *url.URL) string {
 			if err != nil || u2.Hostname() != "qr.cx" {
 				return ""
 			}
-			return cleanURL(u2, cleanQrcx)
+			return cleanURL(u2, "qr.cx", cleanQrcx)
 		}
 	}
 	// Remove file after shortcode
