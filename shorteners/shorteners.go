@@ -38,6 +38,7 @@ var Shorteners = []*Shortener{
 	Bfytw,
 	Debli,
 	GoHawaiiEdu,
+	MobyTo,
 	Qrcx,
 	RedHt,
 	SUconnEdu,
@@ -72,14 +73,14 @@ func (s *Shortener) Clean(shortURL string) (string, error) {
 // returned when no shortcode can be found.
 func (s *Shortener) CleanURL(u *url.URL) (string, error) {
 	shortcode := cleanURL(u, s.CleanFunc)
-	if s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
+	if shortcode != "" && s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
 		return "", fmt.Errorf("%s: shortcode %q does not match alphabet %s after cleaning: %q", s.Name, shortcode, s.Pattern, u)
 	}
 	return shortcode, nil
 }
 
 func cleanURL(u *url.URL, clean CleanFunc) string {
-	shortcode := strings.TrimPrefix(u.Path, "/")
+	shortcode := strings.TrimLeft(u.Path, "/")
 	// Exclude placeholders like <key>
 	if len(shortcode) >= 2 {
 		s0, s1 := shortcode[0], shortcode[len(shortcode)-1]
@@ -87,13 +88,14 @@ func cleanURL(u *url.URL, clean CleanFunc) string {
 			return ""
 		}
 	}
-	// Remove trailing punctuation
-	shortcode = strings.TrimRight(shortcode, ".;")
 	// Remove trailing junk (escapes are nbsp and zwsp)
-	if i := strings.IndexAny(shortcode, "\"])>&’ \u00a0\u200B"); i != -1 {
+	if i := strings.IndexAny(shortcode, "\"])>&’” \u00a0\u200B"); i != -1 {
 		shortcode = shortcode[:i]
 	}
-	shortcode = strings.TrimSuffix(shortcode, "/")
+	// Remove trailing punctuation
+	shortcode = strings.TrimRight(shortcode, ".;")
+	shortcode = strings.TrimRight(shortcode, "/")
+	// Remove concatenated URLs
 	shortcode = trimAfter(shortcode, "http:/")
 	shortcode = trimAfter(shortcode, "https:/")
 	if isCommonFile(shortcode) {
@@ -102,7 +104,6 @@ func cleanURL(u *url.URL, clean CleanFunc) string {
 	if clean != nil {
 		shortcode = clean(shortcode, u)
 	}
-	shortcode = strings.TrimSuffix(shortcode, "/")
 	if isCommonFile(shortcode) {
 		return ""
 	}

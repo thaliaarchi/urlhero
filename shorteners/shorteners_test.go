@@ -66,6 +66,26 @@ func TestClean(t *testing.T) {
 		{GoHawaiiEdu, "http://go.hawaii.edu:80/%E2%80%8Bhttps://www.star.hawaii.edu/studentinterface", ""}, // zero-width space
 		{GoHawaiiEdu, "http://go.hawaii.edu:80/robert-j-elisberg/live-from-ces-day-two-the_b_416265.html", ""},
 
+		{MobyTo, "http://moby.to//8dfstt", "8dfstt"},
+		{MobyTo, "http://moby.to:80/368eck-", "368eck"},
+		{MobyTo, "http://moby.to:80/8f9n7k--", "8f9n7k"},
+		{MobyTo, "http://moby.to:80/4rcbqg%E2%80%9D", "4rcbqg"},   // ”
+		{MobyTo, "http://moby.to:80/ac35nh%3C%3C", "ac35nh"},      // <<
+		{MobyTo, "http://moby.to:80/ac35nh%C2%ABWoW..", "ac35nh"}, // «
+		{MobyTo, "http://moby.to/1rrlao:view", "1rrlao"},
+		{MobyTo, "https://moby.to/atmkt0:full", "atmkt0"},
+		{MobyTo, "http://moby.to/8hmrkj:square", "8hmrkj"},
+		{MobyTo, "http://moby.to:80/22ibg5:small", "22ibg5"},
+		{MobyTo, "http://moby.to:80/91ttyo:large", "91ttyo"},
+		{MobyTo, "http://moby.to:80/1b55uh:thumb", "1b55uh"},
+		{MobyTo, "http://moby.to/08dlmz:thumbnail", "08dlmz"},
+		{MobyTo, "http://moby.to:80/author/hermioneway/item/3417018", ""},
+		{MobyTo, "http://moby.to/*", ""},
+		{MobyTo, "http://moby.to:80/***", ""},
+		{MobyTo, "http://moby.to:80/******", ""},
+		{MobyTo, "http://moby.to/.*", ""},
+		{MobyTo, "http://moby.to/.+", ""},
+
 		{Qrcx, "http://qr.cx:80/)", ""},
 		{Qrcx, "http://www.qr.cx/mQBM", "mQBM"},
 		{Qrcx, "http://qr.cx/tEv/get", "tEv"}, // redirect preview

@@ -47,10 +47,10 @@ func main() {
 	}
 
 	shortcodes, err := s.GetIAShortcodes()
-	try(err)
 	for _, shortcode := range shortcodes {
 		fmt.Println(shortcode)
 	}
+	try(err)
 }
 
 func try(err error) {
