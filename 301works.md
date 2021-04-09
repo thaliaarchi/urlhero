@@ -33,32 +33,32 @@ that service for resolving links from defunct shorteners.
 
 | Shortener    | Collection/Item          | Archive dates            | Site online? |
 | ------------ | ------------------------ | ------------------------ | ------------ |
-| a.ll.st      | [301allst]               | 2020-01-23               | Y |
-| bioweb.me    | [301bim]                 | 2011-10-14 to 2021-04-07 | Y |
-| bit.ly    | [301bly], [301utm] | 2010-01, 2011-03-18 to 2011-07-06 | Y |
-| ho.io        | [301hio]                 | 2010-07-14 to 2010-07-21 | N |
-| icanhaz.com  | [301ich]                 | 2010-07-15               | N |
-| l.frdl.de    | [301fdl]                 | 2012-09-16 to 2017-01-25 | N |
-| lc.cx        | [301lcx]                 | 2014-06-03, 2016-03-01   | Y |
-| lks.uk.to    | [301luk]                 | 2010-07-27               | N |
-| mathga.me    | [301mga]                 | 2010-07-07               | N |
-| miud.in      | [301min]                 | 2010-07-02, 2017-01-31   | Y |
-| nbl.gs       | [301nls]                 | 2010-09-08 to 2017-07-06 | * |
-| pnt.me       | [301pme]                 | 2010-07-28               | N |
-| qr.cx        | [301qrx]                 | 2009-06-01 to 2020-11-07 | N |
-| repost.us    | [301stt]                 | 2014-07-18               | N |
-| rn.tl        | [301lrc]                 | 2010-08-31 to 2015-06-10 | Y |
-| s.tt         | [stt-7-18-14]            | 2014-07-18               | N |
-| snlg.ht      | [301snt]                 | 2016-10-24               | Y |
-| surl.me      | [301sum]                 | 2014-05-12               | N |
-| tiny.cc      | [301tnc]                 | 2011-02-24 to 2021-04-01 | Y |
-| ur1.ca       | [301ur1]                 | 2012-06-23               | N |
-| url.ie       | [301uie]                 | 2008-06-10 to 2017-05    | Y |
-| urlbrief.com | [urlbrief]               | 2009-12-04               | N |
-| urlcut.com   | [301uct]                 | 2010-08-05 to 2013-08-08 | Y |
-| urlizer.com  | [301uzr]                 | 2010-06-23               | Y |
-| va.mu        | [301vmu]                 | 2011-01-25 to 2011-06-21 | N |
-| zapt.in      | [301zai]                 | 2011-10-31               | N |
+| a.ll.st      | [301allst]               | 2020-01-23               | Y  |
+| bioweb.me    | [301bim]                 | 2011-10-14 to 2021-04-07 | Y  |
+| bit.ly    | [301bly], [301utm] | 2010-01, 2011-03-18 to 2011-07-06 | Y  |
+| ho.io        | [301hio]                 | 2010-07-14 to 2010-07-21 | N  |
+| icanhaz.com  | [301ich]                 | 2010-07-15               | N  |
+| l.frdl.de    | [301fdl]                 | 2012-09-16 to 2017-01-25 | N  |
+| lc.cx        | [301lcx]                 | 2014-06-03, 2016-03-01   | Y  |
+| lks.uk.to    | [301luk]                 | 2010-07-27               | N  |
+| mathga.me    | [301mga]                 | 2010-07-07               | N  |
+| miud.in      | [301min]                 | 2010-07-02, 2017-01-31   | Y  |
+| nbl.gs       | [301nls]                 | 2010-09-08 to 2017-07-06 | N* |
+| pnt.me       | [301pme]                 | 2010-07-28               | N  |
+| qr.cx        | [301qrx]                 | 2009-06-01 to 2020-11-07 | N  |
+| repost.us    | [301stt]                 | 2014-07-18               | N  |
+| rn.tl        | [301lrc]                 | 2010-08-31 to 2015-06-10 | Y  |
+| s.tt         | [stt-7-18-14]            | 2014-07-18               | N  |
+| snlg.ht      | [301snt]                 | 2016-10-24               | Y  |
+| surl.me      | [301sum]                 | 2014-05-12               | N  |
+| tiny.cc      | [301tnc]                 | 2011-02-24 to 2021-04-01 | Y  |
+| ur1.ca       | [301ur1]                 | 2012-06-23               | N  |
+| url.ie       | [301uie]                 | 2008-06-10 to 2017-05    | Y  |
+| urlbrief.com | [urlbrief]               | 2009-12-04               | N  |
+| urlcut.com   | [301uct]                 | 2010-08-05 to 2013-08-08 | Y  |
+| urlizer.com  | [301uzr]                 | 2010-06-23               | Y  |
+| va.mu        | [301vmu]                 | 2011-01-25 to 2011-06-21 | N  |
+| zapt.in      | [301zai]                 | 2011-10-31               | N  |
 
 \* nbl.gs website is online, but URLs cannot be shortened or resolved
 due to a mySQL error: `Fatal Error: ezSQL_mysql requires mySQL Lib to be
