@@ -8,7 +8,6 @@ package tinytown
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/andrewarchi/archive"
+	"github.com/andrewarchi/browser/jsonutil"
 	"github.com/andrewarchi/urlhero/beacon"
 )
 
@@ -147,9 +147,7 @@ func readMeta(f *zip.File) (*Meta, error) {
 	}
 	defer xr.Close()
 	var m Meta
-	d := json.NewDecoder(xr)
-	d.DisallowUnknownFields()
-	if err := d.Decode(&m); err != nil {
+	if err := jsonutil.Decode(xr, &m); err != nil {
 		return nil, err
 	}
 	return &m, nil

@@ -8,7 +8,8 @@ package tinytown
 
 import (
 	"encoding/hex"
-	"encoding/json"
+
+	"github.com/andrewarchi/browser/jsonutil"
 )
 
 // Tracker is the base URL of the Terror of Tiny Town tracker instance.
@@ -42,7 +43,7 @@ func GetHealth() (*Health, error) {
 		Projects          []string            `json:"projects"`
 		ProjectStats      map[string][2]int64 `json:"project_stats"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&health); err != nil {
+	if err := jsonutil.Decode(resp.Body, &health); err != nil {
 		return nil, err
 	}
 

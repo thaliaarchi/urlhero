@@ -7,6 +7,7 @@
 package ia
 
 import (
+	"io"
 	"net/http"
 	"net/url"
 )
@@ -38,7 +39,8 @@ func Save(pageURL string, options *SaveOptions) error {
 	}
 	defer resp.Body.Close()
 	// Ignore HTML body
-	return nil
+	_, err = io.Copy(io.Discard, resp.Body)
+	return err
 }
 
 func setBool(v url.Values, key string, b bool) {

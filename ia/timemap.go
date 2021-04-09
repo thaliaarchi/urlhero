@@ -7,12 +7,14 @@
 package ia
 
 import (
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/andrewarchi/browser/jsonutil"
 )
 
 // TimemapOptions contains options for a timemap API call.
@@ -54,7 +56,7 @@ func GetTimemap(pageURL string, options *TimemapOptions) ([][]string, error) {
 	defer resp.Body.Close()
 
 	var timemap [][]string
-	if err := json.NewDecoder(resp.Body).Decode(&timemap); err != nil {
+	if err := jsonutil.Decode(resp.Body, &timemap); err != nil {
 		return nil, err
 	}
 	if len(timemap) >= 1 {
@@ -101,7 +103,8 @@ func digestAlpha(ch byte, digest string) (byte, error) {
 
 func checkResponse(resp *http.Response, err error) (*http.Response, error) {
 	if err == nil && resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
+		defer resp.Body.Close()
+		_, _ = io.Copy(io.Discard, resp.Body)
 		return nil, fmt.Errorf("ia: http status %s", resp.Status)
 	}
 	return resp, err

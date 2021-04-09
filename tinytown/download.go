@@ -9,7 +9,6 @@
 package tinytown
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/storage"
+	"github.com/andrewarchi/browser/jsonutil"
 )
 
 // DownloadTorrents downloads all terroroftinytown releases via torrent.
@@ -71,13 +71,15 @@ func GetReleaseIDs() ([]string, error) {
 		} `json:"items"`
 		Count int `json:"count"`
 		Total int `json:"total"`
+		// TODO fields for error response
 	}
 	var items Scrape
-	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
+	if err := jsonutil.Decode(resp.Body, &items); err != nil {
 		return nil, err
 	}
+
+	// TODO handle paging
 	if items.Count != items.Total {
-		// TODO handle paging
 		return nil, fmt.Errorf("tinytown: queried %d of %d releases", items.Count, items.Total)
 	}
 
