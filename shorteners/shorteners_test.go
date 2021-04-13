@@ -46,8 +46,8 @@ func TestClean(t *testing.T) {
 		{Bfytw, "https://bfy.tw/Okad%22,%22e%22:%22link%22,%22t%22:%22https://bfy.tw/Okad", "Okad"}, // ""
 
 		{Debli, "https://deb.li/hvPc", "hvPc"},
-		{Debli, "http://deb.li:80/p/debian", "debian"},                                   // redirect preview
-		{Debli, "http://deb.li:80/4BE7F84D.5040104@bzed.de", "4BE7F84D.5040104@bzed.de"}, // mailing list redirect
+		{Debli, "http://deb.li:80/p/debian", "debian"},           // redirect preview
+		{Debli, "http://deb.li:80/4BE7F84D.5040104@bzed.de", ""}, // mailing list redirect
 		{Debli, "http://deb.li:80/imprint.html", ""},
 		{Debli, "https://deb.li/static/pics/openlogo-50.png", ""},
 		{Debli, "http://deb.li:80/log%20dari%20training%20Debian%20Women%20dengan%20tema%20%22Debian%20package%20informations%22%20dini%20hari%20tadi%20dapat%20dilihat%20di%20http://meetbot.debian.net/debian-women/2010/debian-women.2010-12-16-20.09.log.html", "log"}, // space
@@ -143,6 +143,26 @@ func TestClean(t *testing.T) {
 		{RedHt, "http://red.ht/13LslKt&quot", "13LslKt"},
 		{RedHt, "http://red.ht/2k3DNz3%E2%80%99", "2k3DNz3"}, // ’
 		{RedHt, "http://red.ht/21Krw4z%C2%A0", "21Krw4z"},    // NBSP
+
+		{ShortIm, "http://www.short.im:80/09u", "09u"},
+		{ShortIm, "http://short.im:80/nova", "nova"},
+		{ShortIm, "http://short.im:80/Christmas-Corner", "Christmas-Corner"},
+		{ShortIm, "http://short.im/api", ""},
+		{ShortIm, "http://short.im/api.php?short=http://short.im/1", "1"},
+		{ShortIm, "http://short.im/api.php?url=http://example.com/very/long/?url", ""},
+		{ShortIm, "http://short.im/donate", ""},
+		{ShortIm, "http://short.im/tos", ""},
+		{ShortIm, "http://short.im/warn", ""},
+		{ShortIm, "http://short.im/feed.rss", ""},
+		{ShortIm, "http://short.im:80/index.php", ""},
+		{ShortIm, "http://short.im/stats.html", ""},
+		{ShortIm, "http://short.im/developer.html", ""},
+		{ShortIm, "http://short.im/multishrink.html", ""},
+		{ShortIm, "https://short.im/modern_theme/build/img/bg.jpg", ""},
+		{ShortIm, "http://short.im/stylesheets/Colaborate-fontfacekit/ColabLig-webfont.eot", ""},
+		{ShortIm, "http://short.im/js/standard.js?rte=1&tm=2&dn=short.im&tid=1020", ""},
+		{ShortIm, "http://short.im:80/caf/earch/tsc.php?&ses=14159950212c36f8a357f0b866615fe9dab1d7e009&200=MjA0MDg5ODA3&21=MTc0LjEyOS4yMzcuMTU3&681=MTQxNTk5NTAyMTJjMzZmOGEzNTdmMGI4NjY2MTVmZTlkYWIxZDdlMDA5&682=&616=MA==&crc=caada4a2a66dc82a6bcaf8e25c06fff5a7ccc2ec&cv=1", ""},
+		// {ShortIm, "http://short.im:80/info/%3C%=urlKeyword%%3E.html?ses=Y3JlPTE0MTU5OTUwMjEmdGNpZD1zaG9ydC5pbTU0NjY1ZThjZTA5ZGEzLjc3OTA3MTEzJmZraT01NDY0JnRhc2s9c2VhcmNoJmRvbWFpbj1zaG9ydC5pbSZzPTZlM2U2YzA2YzdhMWRjN2MxYmRlJmxhbmd1YWdlPWVuJmFfaWQ9Mg==&keyword=%3C%=urlKeyword%%3E&token=%3C%=token%%3E", ""},
 
 		{SUconnEdu, "http://s.uconn.edu/2by", "2by"},
 		{SUconnEdu, "http://s.uconn.edu/ctsrc.", "ctsrc"},

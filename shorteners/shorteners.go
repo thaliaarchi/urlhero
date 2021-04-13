@@ -42,6 +42,7 @@ var Shorteners = []*Shortener{
 	Qrcx,
 	Rbgy,
 	RedHt,
+	ShortIm,
 	SUconnEdu,
 }
 
@@ -73,14 +74,14 @@ func (s *Shortener) Clean(shortURL string) (string, error) {
 // CleanURL extracts the shortcode from a URL. An empty string is
 // returned when no shortcode can be found.
 func (s *Shortener) CleanURL(u *url.URL) (string, error) {
-	shortcode := cleanURL(u, s.Host, s.CleanFunc)
+	shortcode := cleanURL(u, s.CleanFunc)
 	if shortcode != "" && s.Pattern != nil && !s.Pattern.MatchString(shortcode) {
 		return "", fmt.Errorf("%s: shortcode %q does not match alphabet %s after cleaning: %q", s.Name, shortcode, s.Pattern, u)
 	}
 	return shortcode, nil
 }
 
-func cleanURL(u *url.URL, host string, clean CleanFunc) string {
+func cleanURL(u *url.URL, clean CleanFunc) string {
 	shortcode := strings.TrimLeft(u.Path, "/")
 	// Remove trailing junk (escapes are nbsp and zwsp)
 	if i := strings.IndexAny(shortcode, "()[]<>‹›«»\"'‘’“”\\& \n\x00\u00a0\u200B"); i != -1 {
@@ -89,7 +90,7 @@ func cleanURL(u *url.URL, host string, clean CleanFunc) string {
 	// Remove concatenated URLs
 	shortcode = trimAfter(shortcode, "http:/")
 	shortcode = trimAfter(shortcode, "https:/")
-	shortcode = trimAfter(shortcode, host)
+	shortcode = trimAfter(shortcode, "www.")
 	// Remove trailing punctuation
 	shortcode = strings.TrimRight(shortcode, ".,;!")
 	shortcode = strings.TrimRight(shortcode, "/")
@@ -182,6 +183,15 @@ func (s *Shortener) GetIAShortcodes() ([]string, error) {
 		urls[i] = link[0]
 	}
 	return s.CleanURLs(urls)
+}
+
+// getHostname gets the hostname of the given URL, without www or the
+// port.
+func getHostname(u *url.URL) string {
+	if u == nil {
+		return ""
+	}
+	return strings.TrimPrefix(u.Hostname(), "www.")
 }
 
 func trimAfter(s string, substr string) string {

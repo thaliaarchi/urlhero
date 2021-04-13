@@ -29,11 +29,11 @@ func cleanQrcx(shortcode string, u *url.URL) string {
 	if shortcode == "qr/php/qr_img.php" {
 		if d := u.Query().Get("d"); d != "" {
 			u2, err := url.Parse(d)
-			if err != nil || u2.Hostname() != "qr.cx" {
-				return ""
+			if err == nil && getHostname(u2) == "qr.cx" {
+				return cleanURL(u2, cleanQrcx)
 			}
-			return cleanURL(u2, "qr.cx", cleanQrcx)
 		}
+		return ""
 	}
 	// Remove file after shortcode
 	shortcode = qrcxFiles.ReplaceAllLiteralString(shortcode, "")

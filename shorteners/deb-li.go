@@ -30,11 +30,11 @@ var Debli = &Shortener{
 	Host:     "deb.li",
 	Prefix:   "https://deb.li/", // Older links use http
 	Alphabet: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
-	Pattern:  regexp.MustCompile(`^(?:[0-9A-Za-z]+|.+@.+)$`),
+	Pattern:  regexp.MustCompile(`^[0-9A-Za-z]+$`),
 	CleanFunc: func(shortcode string, u *url.URL) string {
-		// Keep mailing list redirects as-is
+		// Ignore mailing list redirects
 		if strings.ContainsRune(shortcode, '@') {
-			return shortcode
+			return ""
 		}
 		// Remove redirect preview
 		shortcode = strings.TrimPrefix(shortcode, "p/")
