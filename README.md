@@ -56,4 +56,4 @@ channel on hackint or email me.
 ## License
 
 This project is made available under the
-[Mozilla Public License](https://www.mozilla.org/en-US/MPL/2.0/).
+[Mozilla Public License, v. 2.0](https://www.mozilla.org/en-US/MPL/2.0/).
